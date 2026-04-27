@@ -19,7 +19,7 @@ class ForecastRoutes implements Route {
       this.path,
       auth,
       validateDto(ForecastQueryDto, 'query'),
-      this.forecastController.getForecast,
+      this.forecastController.getForecasts,
     );
   }
 }
