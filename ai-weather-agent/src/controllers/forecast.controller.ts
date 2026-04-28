@@ -8,7 +8,7 @@ class ForecastController {
 
   public getForecasts = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const data = this.forecastService.getForecasts(req.query as Record<string, unknown>);
+      const data = await this.forecastService.getForecasts(req.query as Record<string, unknown>);
       res.status(200).json(data);
     } catch (error) {
       logger.error(

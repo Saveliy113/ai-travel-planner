@@ -2,7 +2,7 @@ import { Router } from 'express';
 
 import Route from '../interfaces/routes.interface';
 import { ForecastController } from '../controllers/index';
-import { auth, validateDto } from '../middlewares/index';
+import { validateDto } from '../middlewares/index';
 import { ForecastQueryDto } from '../dtos/index';
 
 class ForecastRoutes implements Route {
@@ -17,7 +17,6 @@ class ForecastRoutes implements Route {
   private initializeRoutes(): void {
     this.router.get(
       this.path,
-      auth,
       validateDto(ForecastQueryDto, 'query'),
       this.forecastController.getForecasts,
     );

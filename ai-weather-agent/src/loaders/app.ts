@@ -25,7 +25,6 @@ class App {
     this.initializeMiddlewares();
     this.initializeRoutes(routes);
     this.initializeErrorHandling();
-    this.initializeAlive();
   }
 
   public listen(): void {
@@ -64,14 +63,6 @@ class App {
   private initializeRoutes(routes: Routes[]): void {
     routes.forEach((route) => {
       this.app.use(this.baseUrl, route.router);
-    });
-  }
-
-  public initializeAlive(): void {
-    this.app.use(`${this.baseUrl}/alive`, (req, res) => {
-      res.status(200).json({
-        status: 'live',
-      });
     });
   }
 
