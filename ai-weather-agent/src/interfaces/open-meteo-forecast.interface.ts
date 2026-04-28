@@ -25,7 +25,6 @@ export interface ForecastResponse {
   precipitation_sum: number;
   precipitation_probability_max: number;
   wind_speed_10m_max: number;
-  weather_code: number;
 }
 
 export interface OpenMeteoForecastResponse {
@@ -40,7 +39,10 @@ export interface OpenMeteoForecastResponse {
   daily: OpenMeteoForecastDaily;
 }
 
+export type ForecastMode = 'forecast' | 'archive';
+
 export type ForecastResult = {
+  mode: ForecastMode;
   units: OpenMeteoForecastDailyUnits | null;
   forecasts: ForecastResponse[];
 };
