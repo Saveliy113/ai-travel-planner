@@ -2,7 +2,7 @@ import { Router } from 'express';
 
 import Route from '../interfaces/routes.interface';
 import { ForecastController } from '../controllers/index';
-import { validateDto } from '../middlewares/index';
+import { GetForecastMiddleware, validateDto } from '../middlewares/index';
 import { ForecastQueryDto } from '../dtos/index';
 
 class ForecastRoutes implements Route {
@@ -18,6 +18,7 @@ class ForecastRoutes implements Route {
     this.router.get(
       this.path,
       validateDto(ForecastQueryDto, 'query'),
+      GetForecastMiddleware,
       this.forecastController.getForecasts,
     );
   }
