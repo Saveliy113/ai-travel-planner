@@ -10,7 +10,7 @@ import { logger } from '../utils/logger';
 class ForecastService {
   private getForecastsData = async (mode: ForecastMode, dto: ForecastQueryDto): Promise<ForecastResult> => {
     try {
-      const { data: forecasts } = await axios.get<OpenMeteoForecastResponse>(`${process.env.OPEN_METEO_API_URL}/${mode}`, {
+      const { data: forecasts } = await axios.get<OpenMeteoForecastResponse>(`${mode === 'forecast' ? process.env.OPEN_METEO_API_URL_FORECAST : process.env.OPEN_METEO_API_URL_ARCHIVE}/${mode}`, {
         params: {
           latitude: dto.lat,
           longitude: dto.lon,
@@ -65,7 +65,7 @@ class ForecastService {
         }
 
         const n = group.length;
-        const mean = (pick: (row: ForecastResponse) => number) => group.reduce((sum, row) => sum + pick(row), 0) / n;
+        const mean = (pick: (row: ForecastResponse) => number) => Math.round((group.reduce((sum, row) => sum + pick(row), 0) / n) * 100) / 100;
 
         result.push({
           time: day.format('YYYY-MM-DD'),
