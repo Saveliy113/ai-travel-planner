@@ -99,19 +99,19 @@ class ForecastService {
       // If passed time period is within today + 16 days
       // Fetching the forecast for the period
       const today = moment().startOf('day');
-      const lastForecastDay = today.clone().add(16, 'days');
       logger.info(`[ForecastService] getForecasts: Current date=${today.format('YYYY-MM-DD')}`);
   
       const startDate = moment(dto.startDate);
       const endDate = moment(dto.endDate);
       logger.info(`[ForecastService] getForecasts: Target period: from ${startDate.format('YYYY-MM-DD')} to ${endDate.format('YYYY-MM-DD')}`);
 
-      if (!startDate.isSameOrAfter(today, 'day') && endDate.isSameOrBefore(lastForecastDay, 'day')) {
+      if (startDate.isSameOrAfter(today, 'day') && endDate.isSameOrBefore(today.clone().add(16, 'days'), 'day')) {
         mode = 'forecast';
         logger.info(`[ForecastService] getForecasts: Target period is within forecast window, mode=forecast`);
 
         // Getting the forecast for 16 days
         response = await this.getForecastsData(mode, dto);
+        response.forecasts = response.forecasts.filter(forecast => moment(forecast.time).isSameOrAfter(startDate, 'day') && moment(forecast.time).isSameOrBefore(endDate, 'day'));
       } else {
         mode = 'archive';
         logger.info(`[ForecastService] getForecasts: Target period is outside forecast window, mode=archive`);
