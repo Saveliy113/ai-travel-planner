@@ -1,0 +1,27 @@
+import { Router } from 'express';
+
+import Route from '../interfaces/routes.interface';
+import { LocationController } from '../controllers/index';
+import { LocationQueryMiddleware, validateDto } from '../middlewares/index';
+import { LocationQueryDto } from '../dtos/index';
+
+class LocationRoutes implements Route {
+  public path = '/location';
+  public router = Router();
+  private locationController = new LocationController();
+
+  constructor() {
+    this.initializeRoutes();
+  }
+
+  private initializeRoutes(): void {
+    this.router.get(
+      this.path,
+      validateDto(LocationQueryDto, 'query'),
+      LocationQueryMiddleware,
+      this.locationController.getLocation,
+    );
+  }
+}
+
+export default LocationRoutes;
