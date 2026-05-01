@@ -1,7 +1,7 @@
 {
-  "name": "ai-agent-template",
+  "name": "AI Weather Agent",
   "version": "1.0.0",
-  "description": "Template project for AI Agents",
+  "description": "Weather Agent for AI Travel Assistant",
   "main": "main",
   "scripts": {
     "start": "node dist/main.js",
