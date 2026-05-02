@@ -5,6 +5,7 @@ import {
   IsLongitude,
   IsNotEmpty,
   IsNumber,
+  IsOptional,
   IsString,
   Min,
   ValidateNested,
@@ -22,6 +23,10 @@ class LocationCategoryItemDto {
 }
 
 class LocationBodyDto {
+  @IsString({ message: 'destination must be a string' })
+  @IsNotEmpty({ message: 'destination is required' })
+  destination!: string;
+
   @Type(() => Number)
   @IsNumber({}, { message: 'lat must be a number' })
   @IsLatitude({ message: 'lat must be a valid latitude' })
@@ -33,6 +38,7 @@ class LocationBodyDto {
   @IsLongitude({ message: 'lon must be a valid longitude' })
   @IsNotEmpty({ message: 'lon is required' })
   lon!: number;
+
 
   @IsArray({ message: 'categories must be an array' })
   @ValidateNested({ each: true, message: 'each category must be a valid object: { name: string, count: number }' })
