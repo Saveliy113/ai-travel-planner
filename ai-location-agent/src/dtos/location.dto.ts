@@ -20,8 +20,12 @@ class LocationBodyDto {
 
   @IsArray({ message: 'categories must be an array' })
   @IsString({ each: true, message: 'each category must be a string' })
-  @IsOptional()
-  categories?: string[];
+  @IsNotEmpty({ message: 'categories is required' })
+  categories!: string[];
+
+  @IsNumber({}, { message: 'poiCount must be a number' })
+  @IsNotEmpty({ message: 'poiCount is required' })
+  poiCount!: number;
 }
 
 export { LocationBodyDto };
