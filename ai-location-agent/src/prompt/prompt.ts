@@ -35,8 +35,12 @@ IMPORTANT RULES:
 ---
 
 INPUT:
-category: string[]
-destination: string (optional)
+categories: [
+  {
+    name: string,
+    count: number
+  }
+]
 
 ---
 
