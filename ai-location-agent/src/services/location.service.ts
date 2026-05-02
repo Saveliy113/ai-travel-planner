@@ -1,17 +1,34 @@
 import { LocationBodyDto } from '../dtos/location.dto';
 import { logger } from '../utils/logger';
 
+import { openai } from '../loaders/openai';
+import { QUERY_EXPANDER_PROMPT } from '../prompt/prompt';
+
 class LocationService {
+  private llmModel = process.env.OPENAI_MODEL || 'gpt-5-mini-2025-08-07';
+
   public async getLocation(body: LocationBodyDto): Promise<null> {
     try {
-      let targetLocations = [];
-      let targetLocationsCount = 0;
+      const { lat, lon, categories } = body;
 
-      // Defining target locations count
+      // Building query for categories with OpenAI API
+      const query = await openai.chat.completions.create({
+        model: this.llmModel,
+        messages: [
+          {
+            role: 'system',
+            content: QUERY_EXPANDER_PROMPT,
+          },
+          {
+            role: 'user',
+            content: `Categories: ${categories.map((category) => `${category.name}`).join(', ')}`,
+          },
+        ],
+      });
 
-      // Expanding categories with OpenAI API
+      console.log(query.choices[0].message.content);
 
-      // 
+    
 
       return null;
     } catch (error) {

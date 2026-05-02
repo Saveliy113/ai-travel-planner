@@ -15,7 +15,7 @@ class LocationRoutes implements Route {
   }
 
   private initializeRoutes(): void {
-    this.router.get(
+    this.router.post(
       this.path,
       validateDto(LocationBodyDto, 'body'),
       LocationMiddleware,

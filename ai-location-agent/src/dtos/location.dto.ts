@@ -1,11 +1,27 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsLatitude, IsLongitude, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsLatitude,
+  IsLongitude,
+  IsNotEmpty,
+  IsNumber,
+  IsString,
+  Min,
+  ValidateNested,
+} from 'class-validator';
+
+class LocationCategoryItemDto {
+  @IsString({ message: 'category name must be a string' })
+  @IsNotEmpty({ message: 'category name is required' })
+  name!: string;
+
+  @Type(() => Number)
+  @IsNumber({}, { message: 'category count must be a number' })
+  @Min(1, { message: 'category count must be at least 1' })
+  count!: number;
+}
 
 class LocationBodyDto {
-  @IsString({ message: 'destination must be a string' })
-  @IsNotEmpty({ message: 'destination is required' })
-  destination!: string;
-
   @Type(() => Number)
   @IsNumber({}, { message: 'lat must be a number' })
   @IsLatitude({ message: 'lat must be a valid latitude' })
@@ -19,13 +35,10 @@ class LocationBodyDto {
   lon!: number;
 
   @IsArray({ message: 'categories must be an array' })
-  @IsString({ each: true, message: 'each category must be a string' })
+  @ValidateNested({ each: true, message: 'each category must be a valid object: { name: string, count: number }' })
+  @Type(() => LocationCategoryItemDto)
   @IsNotEmpty({ message: 'categories is required' })
-  categories!: string[];
-
-  @IsNumber({}, { message: 'poiCount must be a number' })
-  @IsNotEmpty({ message: 'poiCount is required' })
-  poiCount!: number;
+  categories!: LocationCategoryItemDto[];
 }
 
-export { LocationBodyDto };
+export { LocationBodyDto, LocationCategoryItemDto };
