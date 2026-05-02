@@ -1,3 +1,3 @@
-import { LocationQueryDto } from './location.dto';
+import { LocationBodyDto } from './location.dto';
 
-export { LocationQueryDto };
+export { LocationBodyDto };

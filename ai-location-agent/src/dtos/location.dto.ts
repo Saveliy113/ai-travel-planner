@@ -1,7 +1,7 @@
 import { Type } from 'class-transformer';
 import { IsArray, IsLatitude, IsLongitude, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
-class LocationQueryDto {
+class LocationBodyDto {
   @IsString({ message: 'destination must be a string' })
   @IsNotEmpty({ message: 'destination is required' })
   destination!: string;
@@ -21,15 +21,7 @@ class LocationQueryDto {
   @IsArray({ message: 'categories must be an array' })
   @IsString({ each: true, message: 'each category must be a string' })
   @IsOptional()
-  implicitCategories?: string[];
-
-  @IsString({ message: 'style must be a string' })
-  @IsOptional()
-  style?: string;
-
-  @IsString({ message: 'budgetLevel must be a string' })
-  @IsOptional()
-  budgetLevel?: 'low' | 'mid' | 'high';
+  categories?: string[];
 }
 
-export { LocationQueryDto };
+export { LocationBodyDto };

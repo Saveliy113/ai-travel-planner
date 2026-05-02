@@ -1,5 +1,5 @@
 import errorMiddleware from './error.middleware';
-import LocationQueryMiddleware from './locationMiddleware';
+import LocationMiddleware from './locationMiddleware';
 import validateDto from './validation.middleware';
 
-export { validateDto, errorMiddleware, LocationQueryMiddleware };
+export { validateDto, errorMiddleware, LocationMiddleware };
