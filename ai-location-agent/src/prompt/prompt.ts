@@ -94,6 +94,7 @@ OUTPUT JSON (strict array, one object per category name in order):
 [
   {
     "name": string,
+    "count": number (return as was passed in INPUT),
     "mode": "type | keyword | textsearch",
     "confidence": 0.0-1.0,
     "density": "dense | medium | sparse",
