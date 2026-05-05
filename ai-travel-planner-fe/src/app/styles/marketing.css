@@ -1,0 +1,33 @@
+/* Marketing / landing surface: warm gradient + readable tokens for this light-only app */
+@layer components {
+  .marketing-shell {
+    width: 100%;
+    background: linear-gradient(
+      to bottom,
+      #ffffff 0%,
+      #fff9e6 42%,
+      #ffe4e1 100%
+    );
+
+    /* Override inherited dark-mode variables so UI stays legible on this light surface */
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.2 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.2 0 0);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.2 0 0);
+    --muted: oklch(0.96 0 0);
+    --muted-foreground: oklch(0.4 0 0);
+    --accent: oklch(0.96 0.01 80);
+    --accent-foreground: oklch(0.22 0 0);
+    --border: oklch(0.88 0 0);
+    --input: oklch(0.9 0 0);
+    --ring: oklch(0.55 0.15 264);
+    --primary: oklch(0.52 0.19 264);
+    --primary-foreground: oklch(0.99 0 0);
+    --secondary: oklch(0.95 0.01 80);
+    --secondary-foreground: oklch(0.22 0 0);
+
+    color: var(--foreground);
+  }
+}

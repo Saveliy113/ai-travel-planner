@@ -1,0 +1,142 @@
+/* Frosted glass surfaces (emoji row, logo mount in header) */
+@layer components {
+  .glass-emoji-bubble {
+    position: relative;
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 9999px;
+    /* Прозрачнее заливка + сильное размытие — виден градиент страницы «сквозь» круг */
+    background: linear-gradient(
+      155deg,
+      rgba(255, 255, 255, 0.52) 0%,
+      rgba(255, 255, 255, 0.14) 45%,
+      rgba(255, 255, 255, 0.08) 100%
+    );
+    border: 1px solid rgba(255, 255, 255, 0.65);
+    box-shadow:
+      0 6px 20px rgba(99, 102, 241, 0.12),
+      0 2px 8px rgba(0, 0, 0, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.75),
+      inset 0 -1px 0 rgba(147, 51, 234, 0.06);
+    backdrop-filter: blur(18px) saturate(175%);
+    -webkit-backdrop-filter: blur(18px) saturate(175%);
+    transform: translateZ(0);
+    isolation: isolate;
+  }
+
+  .glass-emoji-bubble::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 40%;
+    max-height: 42px;
+    border-radius: 9999px 9999px 0 0;
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.55) 0%,
+      transparent 100%
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .glass-emoji-bubble::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 15%;
+    right: 15%;
+    height: 30%;
+    border-radius: 50%;
+    background: radial-gradient(
+      ellipse at center,
+      rgba(255, 182, 193, 0.22) 0%,
+      transparent 70%
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .glass-logo-shell {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    width: 3rem;
+    height: 3rem;
+    flex-shrink: 0;
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.1),
+      inset 0 0 16px 8px rgba(255, 255, 255, 0.45);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  .glass-logo-shell::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.8),
+      transparent
+    );
+    pointer-events: none;
+  }
+
+  .glass-logo-shell::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 100%;
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.8),
+      transparent,
+      rgba(255, 255, 255, 0.3)
+    );
+    pointer-events: none;
+  }
+}
+
+@keyframes typewriter-caret-blink {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@layer components {
+  .typewriter-caret {
+    display: inline-block;
+    width: 0.08em;
+    min-width: 2px;
+    height: 0.95em;
+    margin-left: 0.06em;
+    vertical-align: -0.06em;
+    border-radius: 1px;
+    background-color: currentColor;
+    animation: typewriter-caret-blink 0.95s step-end infinite;
+  }
+}
