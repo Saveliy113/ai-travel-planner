@@ -2,7 +2,7 @@ import { Router } from 'express';
 
 import { ValidationController } from '../controllers/index';
 import Route from '../interfaces/routes.interface';
-import { validateDto, validationDateRangeMiddleware } from '../middlewares/index';
+import { validateDto } from '../middlewares/index';
 import { TravelPlannerInputDto } from '../dtos/index';
 
 class ValidationRoutes implements Route {
@@ -16,10 +16,9 @@ class ValidationRoutes implements Route {
 
   private initializeRoutes(): void {
     this.router.post(
-      this.path,
+      `${this.path}/destination`,
       validateDto(TravelPlannerInputDto, 'body'),
-      validationDateRangeMiddleware,
-      this.validationController.validateTravelInput,
+      this.validationController.validateDestination,
     );
   }
 }

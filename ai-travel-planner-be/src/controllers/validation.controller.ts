@@ -1,17 +1,18 @@
-import { plainToInstance } from 'class-transformer';
 import { Request, Response, NextFunction } from 'express';
 
-import { TravelPlannerInputDto } from '../dtos/validation.dto';
+import ValidationService from '../services/validation.service';
 import { logger } from '../utils/logger';
 
 class ValidationController {
-  public validateTravelInput = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  private validationService = new ValidationService();
+
+  public validateDestination = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const data = plainToInstance(TravelPlannerInputDto, req.body);
-      res.status(200).json({ valid: true, data });
+      const data = await this.validationService.validateDestination(req.body.destination as string);
+      res.status(200).json(data);
     } catch (error) {
       logger.error(
-        `[ERROR] [ValidationController] [validateTravelInput]: ${error instanceof Error ? error.message : error}`,
+        `[ERROR] [ValidationController] [validateDestination]: ${error instanceof Error ? error.message : error}`,
       );
       next(error);
     }

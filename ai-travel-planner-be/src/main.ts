@@ -1,10 +1,8 @@
 import 'reflect-metadata';
-import { config } from 'dotenv';
+import 'dotenv/config';
 
 import App from './loaders/app';
 import { AliveRoutes, ValidationRoutes } from './routes/index';
-
-config();
 
 const app = new App([new AliveRoutes(), new ValidationRoutes()]);
 
