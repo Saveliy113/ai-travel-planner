@@ -32,6 +32,16 @@ export interface DestinationStepProps {
 export type Phase = "input" | "clarify"
 
 export interface LocationStore {
+  step: number;
+  setStep: (step: number) => void;
   destination: string;
   setDestination: (destination: string) => void;
+  firstStepPhase: Phase;
+  setFirstStepPhase: (phase: Phase) => void;
+  clarificationReason: string;
+  setClarificationReason: (reason: string) => void;
+  clarificationOptions: DestinationClarificationOption[];
+  setClarificationOptions: (options: DestinationClarificationOption[]) => void;
+  selectedClarification: string;
+  setSelectedClarification: (clarification: string) => void;
 }
