@@ -6,11 +6,8 @@ import { LocationStep2Template } from "@/modules/Location/components/LocationSte
 import type {
   DestinationClarificationOption,
   DestinationValidationResult,
-} from "@/modules/Location/model/types"
-
-type LocationModuleProps = {
-  className?: string
-}
+  LocationModuleProps,
+} from "@/modules/Location/model/location.interface"
 
 const LocationModule = ({ className }: LocationModuleProps) => {
   const [step, setStep] = useState<1 | 2>(1)

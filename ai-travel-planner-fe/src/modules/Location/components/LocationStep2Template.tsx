@@ -1,7 +1,7 @@
 import type {
   DestinationClarificationOption,
   DestinationValidationResult,
-} from "@/modules/Location/model/types"
+} from "@/modules/Location/model/location.interface"
 import { cn } from "@/lib/utils"
 import { MapPin } from "lucide-react"
 

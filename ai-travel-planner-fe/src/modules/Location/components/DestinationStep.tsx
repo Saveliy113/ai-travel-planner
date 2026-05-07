@@ -5,7 +5,8 @@ import { cn } from "@/lib/utils"
 import type {
   DestinationClarificationOption,
   DestinationValidationResult,
-} from "@/modules/Location/model/types"
+  Phase,
+} from "@/modules/Location/model/location.interface"
 import {
   DESTINATION_SUGGESTIONS,
   destinationFieldId,
@@ -13,19 +14,13 @@ import {
 } from "@/modules/Location/model/scheme"
 import { Button } from "@/shared/ui/button"
 import { useValidateDestinationQuery } from "@/modules/Location/queries/validation.query"
-
-type DestinationStepProps = {
-  onProceedToNextStep: (
-    validation: DestinationValidationResult,
-    selectedClarification?: DestinationClarificationOption,
-  ) => void
-}
-
-type Phase = "input" | "clarify"
+import type { DestinationStepProps } from "@/modules/Location/model/location.interface"
+import { useLocationStore } from "@/modules/Location/store/location.store"
 
 export const DestinationStep = ({ onProceedToNextStep }: DestinationStepProps) => {
+  const { destination, setDestination } = useLocationStore()
+
   const [phase, setPhase] = useState<Phase>("input")
-  const [destination, setDestination] = useState("")
   const [validationResult, setValidationResult] =
     useState<DestinationValidationResult | null>(null)
   const [selectedClarification, setSelectedClarification] =
@@ -68,27 +63,46 @@ export const DestinationStep = ({ onProceedToNextStep }: DestinationStepProps) =
 
   const isClarify = phase === "clarify" && validationResult
 
+  const handlePrimaryAction = (): void => {
+    if (phase === "input") {
+      handleNextFromInput()
+      return
+    }
+    if (isClarify) {
+      handleContinueAfterClarification()
+    }
+  }
+
+  const primaryDisabled =
+    phase === "input"
+      ? isPending || !destination.trim()
+      : Boolean(needsPick && !selectedClarification)
+
+  const showPrimaryFooter = phase === "input" || isClarify
+
   return (
     <>
+      {/* Main Destination input */}
       <label className="sr-only" htmlFor={destinationFieldId}>
         Desired destination
       </label>
       <textarea
-        autoComplete="off"
+        id={destinationFieldId}
+        name="destination"
+        value={destination}
         className={cn(
           "min-h-[120px] w-full resize-none rounded-xl border border-black/12 bg-white px-4 py-3.5 text-[0.9375rem] leading-relaxed text-foreground shadow-none outline-none transition-[color,box-shadow]",
           "placeholder:text-neutral-400",
           "focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/25",
           isClarify && "cursor-default bg-muted/25 text-foreground/90"
         )}
-        id={destinationFieldId}
-        name="destination"
+        autoComplete="off"
         onChange={(e) => setDestination(e.target.value)}
         placeholder={destinationPlaceholder}
         readOnly={Boolean(isClarify)}
-        value={destination}
       />
 
+      {/* Destination suggestions */}
       {phase === "input" ? (
         <div className="mt-4 flex flex-wrap gap-2">
           {DESTINATION_SUGGESTIONS.map((place) => (
@@ -108,30 +122,7 @@ export const DestinationStep = ({ onProceedToNextStep }: DestinationStepProps) =
         </div>
       ) : null}
 
-      {phase === "input" ? (
-        <div className="mt-5 flex justify-end border-t border-black/10 pt-4">
-          <Button
-            aria-busy={isPending}
-            className="gap-1.5 rounded-full px-5 shadow-sm"
-            disabled={isPending || !destination.trim()}
-            onClick={handleNextFromInput}
-            type="button"
-          >
-            {isPending ? (
-              <>
-                <Loader2 className="size-4 animate-spin" aria-hidden />
-                Checking…
-              </>
-            ) : (
-              <>
-                Next
-                <ArrowRight className="size-4" aria-hidden />
-              </>
-            )}
-          </Button>
-        </div>
-      ) : null}
-
+      {/* Clarification info block with reason */}
       {isClarify ? (
         <div className="mt-6 flex flex-col gap-5 border-t border-black/10 pt-6">
           <div>
@@ -165,6 +156,7 @@ export const DestinationStep = ({ onProceedToNextStep }: DestinationStepProps) =
             </div>
           </div>
 
+          {/* Clarification options */}
           {needsPick ? (
             <div className="space-y-3">
               <p className="text-sm font-semibold tracking-tight text-foreground">
@@ -201,18 +193,37 @@ export const DestinationStep = ({ onProceedToNextStep }: DestinationStepProps) =
               </ul>
             </div>
           ) : null}
+        </div>
+      ) : null}
 
-          <div className="flex justify-end pt-1">
-            <Button
-              className="gap-1.5 rounded-full px-5 shadow-sm"
-              disabled={Boolean(needsPick && !selectedClarification)}
-              onClick={handleContinueAfterClarification}
-              type="button"
-            >
-              Continue
-              <ArrowRight className="size-4" aria-hidden />
-            </Button>
-          </div>
+      {showPrimaryFooter ? (
+        <div
+          className={cn(
+            "flex justify-end",
+            phase === "input"
+              ? "mt-5 border-t border-black/10 pt-4"
+              : "mt-4 pt-1"
+          )}
+        >
+          <Button
+            aria-busy={phase === "input" ? isPending : undefined}
+            className="gap-1.5 rounded-full px-5 shadow-sm"
+            disabled={primaryDisabled}
+            onClick={handlePrimaryAction}
+            type="button"
+          >
+            {phase === "input" && isPending ? (
+              <>
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+                Loading…
+              </>
+            ) : (
+              <>
+                {phase === "input" ? "Next" : "Continue"}
+                <ArrowRight className="size-4" aria-hidden />
+              </>
+            )}
+          </Button>
         </div>
       ) : null}
     </>
