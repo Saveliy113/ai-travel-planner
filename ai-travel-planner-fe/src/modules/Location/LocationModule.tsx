@@ -1,11 +1,24 @@
+import { useState } from "react"
+
 import { cn } from "@/lib/utils"
 import { DestinationStep } from "@/modules/Location/components/DestinationStep"
+import { LocationStep2Template } from "@/modules/Location/components/LocationStep2Template"
+import type {
+  DestinationClarificationOption,
+  DestinationValidationResult,
+} from "@/modules/Location/model/types"
 
 type LocationModuleProps = {
   className?: string
 }
 
 const LocationModule = ({ className }: LocationModuleProps) => {
+  const [step, setStep] = useState<1 | 2>(1)
+  const [step2Payload, setStep2Payload] = useState<{
+    validation: DestinationValidationResult
+    selectedClarification?: DestinationClarificationOption
+  } | null>(null)
+
   return (
     <div
       className={cn(
@@ -13,7 +26,19 @@ const LocationModule = ({ className }: LocationModuleProps) => {
         className
       )}
     >
-      <DestinationStep />
+      {step === 1 ? (
+        <DestinationStep
+          onProceedToNextStep={(validation, selectedClarification) => {
+            setStep2Payload({ validation, selectedClarification })
+            setStep(2)
+          }}
+        />
+      ) : step2Payload ? (
+        <LocationStep2Template
+          selectedClarification={step2Payload.selectedClarification}
+          validation={step2Payload.validation}
+        />
+      ) : null}
     </div>
   )
 }

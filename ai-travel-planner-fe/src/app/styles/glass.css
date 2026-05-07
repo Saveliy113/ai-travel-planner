@@ -8,7 +8,7 @@
     justify-content: center;
     overflow: hidden;
     border-radius: 9999px;
-    /* Прозрачнее заливка + сильное размытие — виден градиент страницы «сквозь» круг */
+    /* Lighter fill + stronger blur so the page gradient shows through the circle */
     background: linear-gradient(
       155deg,
       rgba(255, 255, 255, 0.52) 0%,
