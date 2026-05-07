@@ -1,9 +1,11 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  /** Base URL for location / validation API (Vite: `LOCATION_API` → `VITE_LOCATION_API`) */
-  readonly VITE_LOCATION_API?: string
-  readonly VITE_API_VERSION?: string
+  /**
+   * Full base URL for the location API, including `/api/{version}`
+   * (e.g. `http://localhost:7016/api/v1`).
+   */
+  readonly VITE_LOCATION_API_URL?: string
 }
 
 interface ImportMeta {
