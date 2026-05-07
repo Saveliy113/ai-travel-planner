@@ -1,7 +1,22 @@
 import type { ReactNode } from "react"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { toast } from "sonner"
 
-type AppProvidersProps = {
-  children: ReactNode
-}
+import { Toaster } from "@/shared/ui/sonner"
 
-export const AppProviders = ({ children }: AppProvidersProps) => children
+const queryClient = new QueryClient({
+  defaultOptions: {
+    mutations: {
+      onError: (error) => {
+        toast.error(error.message)
+      },
+    },
+  },
+})
+
+export const AppProviders = ({ children }: { children: ReactNode }) => (
+  <QueryClientProvider client={queryClient}>
+    {children}
+    <Toaster />
+  </QueryClientProvider>
+)
