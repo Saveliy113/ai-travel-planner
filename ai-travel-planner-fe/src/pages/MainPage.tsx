@@ -5,7 +5,7 @@ import { HeroHeadingTypewriter } from "@/shared/ui/hero-heading-typewriter"
 const HERO_EMOJIS = ["✈️", "🌍", "🗼", "🏖️", "🧳", "🌴", "🎒", "📍"] as const
 
 const HERO_HEADING =
-  "Create your best travel plan with our AI Travel Assistant."
+  "Create your best travel plan with AI Travel Assistant."
 
 export const MainPage = () => {
   return (
