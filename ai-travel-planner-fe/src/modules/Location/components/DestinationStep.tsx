@@ -23,6 +23,8 @@ export const DestinationStep = () => {
     setClarificationOptions,
     selectedClarification,
     setSelectedClarification,
+    setLocationType,
+    setSelectedClarificationDescription,
   } = useLocationStore()
 
   const { mutate: validateDestination, isPending } = useValidateDestinationQuery()
@@ -40,6 +42,7 @@ export const DestinationStep = () => {
           else {
             // If validation failed (data.clarificationRequired is true),
             // set clarification required and proceed to clarification step
+            setLocationType(data.locationType)
             setClarificationReason(data.clarificationReason)
             setClarificationOptions(data.clarificationOptions)
             setFirstStepPhase("clarify")
@@ -151,7 +154,10 @@ export const DestinationStep = () => {
                             ? "border-primary bg-primary/[0.06] shadow-md ring-2 ring-primary/20"
                             : "border-black/12 hover:border-black/22 hover:bg-muted/35 hover:shadow-md"
                         )}
-                        onClick={() => setSelectedClarification(option.name)}
+                        onClick={() => {
+                          setSelectedClarification(option.name)
+                          setSelectedClarificationDescription(option.description)
+                        }}
                         type="button"
                       >
                         <span className="block font-semibold text-foreground">

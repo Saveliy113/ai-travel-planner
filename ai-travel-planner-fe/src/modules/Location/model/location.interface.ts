@@ -44,4 +44,8 @@ export interface LocationStore {
   setClarificationOptions: (options: DestinationClarificationOption[]) => void;
   selectedClarification: string;
   setSelectedClarification: (clarification: string) => void;
+  selectedClarificationDescription: string;
+  setSelectedClarificationDescription: (description: string) => void;
+  locationType: string;
+  setLocationType: (type: string) => void;
 }

@@ -1,11 +1,18 @@
 import { cn } from "@/lib/utils"
 import { DestinationStep } from "@/modules/Location/components/DestinationStep"
-import { LocationStep2Template } from "@/modules/Location/components/LocationStep2Template"
+import { LocationStep2 } from "@/modules/Location/components/LocationStep2"
+import { LocationSummary } from "@/modules/Location/components/LocationSummary"
 import type { LocationModuleProps } from "@/modules/Location/model/location.interface"
 import { useLocationStore } from "./store/location.store"
 
 const LocationModule = ({ className }: LocationModuleProps) => {
-  const { step, setStep } = useLocationStore()
+  const {
+    step,
+    destination,
+    locationType,
+    selectedClarification,
+    selectedClarificationDescription,
+  } = useLocationStore()
 
   return (
     <div
@@ -14,15 +21,20 @@ const LocationModule = ({ className }: LocationModuleProps) => {
         className
       )}
     >
-      {step === 1 && (
-        <DestinationStep />
-      )}
+      {step === 1 && <DestinationStep />}
 
-      {step === 2 && (
-        <LocationStep2Template
-          validation={validation}
-          selectedClarification={selectedClarification}
-        />
+      {step >= 2 && (
+        <div className="flex flex-col gap-6">
+          <LocationSummary
+            destination={destination}
+            locationType={locationType}
+            selectedClarification={selectedClarification || undefined}
+            selectedClarificationDescription={
+              selectedClarificationDescription || undefined
+            }
+          />
+          {step === 2 && <LocationStep2 />}
+        </div>
       )}
     </div>
   )
