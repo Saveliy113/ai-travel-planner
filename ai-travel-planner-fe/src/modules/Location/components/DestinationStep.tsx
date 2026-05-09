@@ -4,7 +4,6 @@ import { cn } from "@/lib/utils"
 import {
   DESTINATION_SUGGESTIONS,
   destinationFieldId,
-  destinationPlaceholder,
 } from "@/modules/Location/model/scheme"
 import { Button } from "@/shared/ui/button"
 import { useValidateDestinationQuery } from "@/modules/Location/queries/validation.query"
@@ -60,24 +59,36 @@ export const DestinationStep = () => {
   return (
     <>
       {/* Main Destination input */}
-      <label className="sr-only" htmlFor={destinationFieldId}>
-        Desired destination
-      </label>
-      <textarea
-        id={destinationFieldId}
-        name="destination"
-        value={destination}
-        className={cn(
-          "min-h-[120px] w-full resize-none rounded-xl border border-black/12 bg-white px-4 py-3.5 text-[0.9375rem] leading-relaxed text-foreground shadow-none outline-none transition-[color,box-shadow]",
-          "placeholder:text-neutral-400",
-          "focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/25",
-          firstStepPhase === "clarify" && "cursor-default bg-muted/25 text-foreground/90"
-        )}
-        autoComplete="off"
-        onChange={(e) => setDestination(e.target.value)}
-        placeholder={destinationPlaceholder}
-        readOnly={firstStepPhase === "clarify"}
-      />
+      <div>
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          Step 1
+        </p>
+        <h2 className="mt-1 mb-0 text-lg font-semibold tracking-tight text-foreground">
+          Destination
+        </h2>
+        <p className="mt-0 mb-1 text-sm leading-relaxed text-muted-foreground">
+          Enter the destination for your trip.
+        </p>
+
+        <label className="sr-only" htmlFor={destinationFieldId}>
+          Desired destination
+        </label>
+        <textarea
+          id={destinationFieldId}
+          name="destination"
+          value={destination}
+          className={cn(
+            "min-h-[120px] w-full resize-none rounded-xl border border-black/12 bg-white px-4 py-3.5 text-[0.9375rem] leading-relaxed text-foreground shadow-none outline-none transition-[color,box-shadow]",
+            "placeholder:text-neutral-400",
+            "focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/25",
+            firstStepPhase === "clarify" && "cursor-default bg-muted/25 text-foreground/90"
+          )}
+          autoComplete="off"
+          onChange={(e) => setDestination(e.target.value)}
+          readOnly={firstStepPhase === "clarify"}
+        />
+        
+      </div>
 
       {/* Destination suggestions */}
       {firstStepPhase === "input" ? (

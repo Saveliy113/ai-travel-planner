@@ -35,7 +35,7 @@ export const LocationSummary = ({
     <>
       <div
         className={cn(
-          "rounded-2xl border border-red-500/10 bg-muted/30 px-4 py-4 sm:px-5",
+          "rounded-2xl border border-black/10 bg-muted/30 px-4 py-4 sm:px-5",
           "shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]"
         )}
       >

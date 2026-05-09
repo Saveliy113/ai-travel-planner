@@ -12,5 +12,3 @@ export const DESTINATION_SUGGESTIONS = [
 export type DestinationSuggestion = (typeof DESTINATION_SUGGESTIONS)[number]
 
 export const destinationFieldId = "travel-destination" as const
-
-export const destinationPlaceholder = "You dream vacation destination" as const
