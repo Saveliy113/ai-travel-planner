@@ -1,3 +1,3 @@
-import { LocationBodyDto, LocationCategoryItemDto } from './location.dto';
+import { LocationBodyDto, LocationCategoryItemDto, LocationInterestsBodyDto } from './location.dto';
 
-export { LocationBodyDto, LocationCategoryItemDto };
+export { LocationBodyDto, LocationCategoryItemDto, LocationInterestsBodyDto };

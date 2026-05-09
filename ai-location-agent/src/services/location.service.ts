@@ -1,10 +1,16 @@
 import axios from 'axios';
-import { LocationBodyDto } from '../dtos/location.dto';
+import { LocationBodyDto, LocationInterestsBodyDto } from '../dtos/location.dto';
 import { logger } from '../utils/logger';
 
 import { openai } from '../loaders/openai';
-import { QUERY_EXPANDER_PROMPT } from '../prompt/prompt';
-import { CategoryQuery, GetGooglePlacesQueryBind, GooglePlacesPoiItem, GooglePlacesPoiResponse, LocationCategoryResult } from '../interfaces/location.interface';
+import { QUERY_EXPANDER_PROMPT, TRAVEL_INTERESTS_SYSTEM_PROMPT } from '../prompt/prompt';
+import {
+  CategoryQuery,
+  GetGooglePlacesQueryBind,
+  GooglePlacesPoiItem,
+  GooglePlacesPoiResponse,
+  LocationCategoryResult,
+} from '../interfaces/location.interface';
 
 class LocationService {
   private llmModel = process.env.OPENAI_MODEL || 'gpt-5-mini-2025-08-07';
@@ -113,6 +119,38 @@ class LocationService {
     } catch (error) {
       logger.error(
         `[LocationService] getLocation: ${error instanceof Error ? error.message : error}`,
+      );
+      throw error;
+    }
+  }
+
+  public async getInterests(body: LocationInterestsBodyDto): Promise<unknown> {
+    try {
+      const { destination } = body;
+      const completion = await openai.chat.completions.create({
+        model: this.llmModel,
+        response_format: { type: 'json_object' },
+        messages: [
+          {
+            role: 'system',
+            content: TRAVEL_INTERESTS_SYSTEM_PROMPT,
+          },
+          {
+            role: 'user',
+            content: JSON.stringify({ destination }),
+          },
+        ],
+      });
+
+      const content = completion.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error('Empty response from OpenAI');
+      }
+
+      return JSON.parse(content) as unknown;
+    } catch (error) {
+      logger.error(
+        `[LocationService] getInterests: ${error instanceof Error ? error.message : error}`,
       );
       throw error;
     }

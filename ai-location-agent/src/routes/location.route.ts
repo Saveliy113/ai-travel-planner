@@ -3,7 +3,7 @@ import { Router } from 'express';
 import Route from '../interfaces/routes.interface';
 import { LocationController } from '../controllers/index';
 import { LocationMiddleware, validateDto } from '../middlewares/index';
-import { LocationBodyDto } from '../dtos/index';
+import { LocationBodyDto, LocationInterestsBodyDto } from '../dtos/index';
 
 class LocationRoutes implements Route {
   public path = '/location';
@@ -15,6 +15,11 @@ class LocationRoutes implements Route {
   }
 
   private initializeRoutes(): void {
+    this.router.post(
+      `${this.path}/interests`,
+      validateDto(LocationInterestsBodyDto, 'body'),
+      this.locationController.getInterests,
+    );
     this.router.post(
       this.path,
       validateDto(LocationBodyDto, 'body'),

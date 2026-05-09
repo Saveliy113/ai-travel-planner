@@ -5,7 +5,6 @@ import {
   IsLongitude,
   IsNotEmpty,
   IsNumber,
-  IsOptional,
   IsString,
   Min,
   ValidateNested,
@@ -47,4 +46,10 @@ class LocationBodyDto {
   categories!: LocationCategoryItemDto[];
 }
 
-export { LocationBodyDto, LocationCategoryItemDto };
+class LocationInterestsBodyDto {
+  @IsString({ message: 'destination must be a string' })
+  @IsNotEmpty({ message: 'destination is required' })
+  destination!: string;
+}
+
+export { LocationBodyDto, LocationCategoryItemDto, LocationInterestsBodyDto };
