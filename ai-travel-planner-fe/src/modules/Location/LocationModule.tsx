@@ -1,18 +1,13 @@
 import { cn } from "@/lib/utils"
 import { DestinationStep } from "@/modules/Location/components/DestinationStep"
 import { LocationStep2 } from "@/modules/Location/components/LocationStep2"
+import { LocationStep3 } from "@/modules/Location/components/LocationStep3"
 import { LocationSummary } from "@/modules/Location/components/LocationSummary"
 import type { LocationModuleProps } from "@/modules/Location/model/location.interface"
 import { useLocationStore } from "./store/location.store"
 
 const LocationModule = ({ className }: LocationModuleProps) => {
-  const {
-    step,
-    destination,
-    locationType,
-    selectedClarification,
-    selectedClarificationDescription,
-  } = useLocationStore()
+  const { step } = useLocationStore()
 
   return (
     <div
@@ -25,16 +20,11 @@ const LocationModule = ({ className }: LocationModuleProps) => {
 
       {step === 2 && <LocationStep2 />}
 
+      {step === 3 && <LocationStep3 />}
+
       {step >= 2 && (
         <div className="flex flex-col gap-6 mt-10">
-          <LocationSummary
-            destination={destination}
-            locationType={locationType}
-            selectedClarification={selectedClarification || undefined}
-            selectedClarificationDescription={
-              selectedClarificationDescription || undefined
-            }
-          />
+          <LocationSummary />
         </div>
       )}
     </div>

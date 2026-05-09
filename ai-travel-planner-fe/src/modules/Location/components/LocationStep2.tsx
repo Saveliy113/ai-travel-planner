@@ -1,32 +1,61 @@
+import axios from "axios"
+import { useState } from "react"
 import { isBefore, parse, startOfDay } from "date-fns"
+import { ArrowRight, Loader2 } from "lucide-react"
 
-import { cn } from "@/lib/utils"
+import { fetchLocationInterests } from "@/modules/Location/api/interests.api"
+import { BUDGET_LEVEL_OPTIONS } from "@/modules/Location/model/scheme"
 import { useLocationStore } from "@/modules/Location/store/location.store"
+import { Button } from "@/shared/ui/button"
 import { TripDatePicker } from "@/shared/ui/trip-date-picker"
-
-const BUDGET_OPTIONS = [
-  { value: "economy", label: "Economy", hint: "Hostels · street food · public transit" },
-  { value: "moderate", label: "Moderate", hint: "Mid-range stays · dine out sometimes" },
-  { value: "comfort", label: "Comfort", hint: "Nicer hotels · flexible dining" },
-  { value: "luxury", label: "Luxury", hint: "Premium stays · indulgent pace" },
-] as const
+import { cn } from "@/lib/utils"
 
 /**
- * Step 2 template — demo screen after destination / clarification.
- * Trip summary is rendered in LocationModule for step 2 and above.
+ * Step 2 — dates, budget, then fetch interest recommendations for the destination.
  */
 export const LocationStep2 = () => {
   const {
+    destination,
     startDate,
     endDate,
     budget,
     setStartDate,
     setEndDate,
     setBudget,
+    setStep,
+    setInterestCategories,
   } = useLocationStore()
+
+  const [interestsPending, setInterestsPending] = useState(false)
+  const [interestsError, setInterestsError] = useState<string | null>(null)
 
   const todayStart = startOfDay(new Date())
   const parsedStart = startDate ? parse(startDate, "yyyy-MM-dd", new Date()) : undefined
+
+  const handleNext = async (): Promise<void> => {
+    const dest = destination.trim()
+    if (!dest || interestsPending) return
+    setInterestsError(null)
+    setInterestsPending(true)
+    try {
+      const data = await fetchLocationInterests(dest)
+      setInterestCategories(data.categories)
+      setStep(3)
+    } catch (e) {
+      let msg = "Could not load interests. Try again."
+      if (axios.isAxiosError(e)) {
+        const data = e.response?.data as
+          | { errMsg?: string; message?: string }
+          | undefined
+        msg = data?.errMsg ?? data?.message ?? e.message ?? msg
+      } else if (e instanceof Error) {
+        msg = e.message
+      }
+      setInterestsError(msg)
+    } finally {
+      setInterestsPending(false)
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -93,7 +122,7 @@ export const LocationStep2 = () => {
               </p>
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
-              {BUDGET_OPTIONS.map(({ value, label, hint }) => {
+              {BUDGET_LEVEL_OPTIONS.map(({ value, label, hint }) => {
                 const selected = budget === value
                 return (
                   <button
@@ -116,6 +145,34 @@ export const LocationStep2 = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {interestsError ? (
+        <p className="text-sm text-destructive" role="alert">
+          {interestsError}
+        </p>
+      ) : null}
+
+      <div className="flex justify-end border-t border-black/10 pt-4">
+        <Button
+          aria-busy={interestsPending}
+          className="gap-1.5 rounded-full px-5 shadow-sm"
+          disabled={interestsPending || !destination.trim()}
+          onClick={() => void handleNext()}
+          type="button"
+        >
+          {interestsPending ? (
+            <>
+              <Loader2 className="size-4 animate-spin" aria-hidden />
+              Loading…
+            </>
+          ) : (
+            <>
+              Next
+              <ArrowRight className="size-4" aria-hidden />
+            </>
+          )}
+        </Button>
       </div>
     </div>
   )

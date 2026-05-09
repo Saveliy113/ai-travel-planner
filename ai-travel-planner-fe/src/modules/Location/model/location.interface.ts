@@ -31,6 +31,17 @@ export interface DestinationStepProps {
 
 export type Phase = "input" | "clarify"
 
+/** One interest row from `POST /location/interests` (LLM). */
+export interface TravelInterestCategory {
+  label: string
+  searchQuery: string
+  description: string
+}
+
+export interface LocationInterestsResponse {
+  categories: TravelInterestCategory[]
+}
+
 export interface LocationStore {
   step: number;
   setStep: (step: number) => void;
@@ -54,4 +65,8 @@ export interface LocationStore {
   setEndDate: (date: string) => void;
   budget: string;
   setBudget: (budget: string) => void;
+  interestCategories: TravelInterestCategory[];
+  setInterestCategories: (categories: TravelInterestCategory[]) => void;
+  selectedInterestLabels: string[];
+  toggleInterestSelection: (label: string) => void;
 }

@@ -1,35 +1,40 @@
-import { cn } from "@/lib/utils"
-import { MapPin } from "lucide-react"
+import { format, isValid, parse } from "date-fns"
+import { CalendarRange, MapPin, Wallet } from "lucide-react"
 
-export interface LocationSummaryProps {
-  destination: string
-  locationType: string
-  selectedClarification?: string
-  selectedClarificationDescription?: string
-  /** Shown when `destination` is empty */
-  destinationPlaceholder?: string
-  /** Shown when `locationType` is empty */
-  locationTypePlaceholder?: string
-  /** Placeholder for the dashed details section below the card */
-  detailsPlaceholder?: string
+import { cn } from "@/lib/utils"
+import { budgetLabelFromValue } from "@/modules/Location/model/scheme"
+import { useLocationStore } from "@/modules/Location/store/location.store"
+
+function formatYmd(ymd: string): string | null {
+  if (!ymd.trim()) return null
+  const d = parse(ymd, "yyyy-MM-dd", new Date())
+  return isValid(d) ? format(d, "MMM d, yyyy") : null
 }
 
-const defaultDestinationPlaceholder = "Destination"
-const defaultLocationTypePlaceholder = "Location type"
-const defaultDetailsPlaceholder =
-  "Dates, travelers, and more will appear here"
+export const LocationSummary = () => {
+  const {
+    step,
+    destination,
+    locationType,
+    selectedClarification,
+    selectedClarificationDescription,
+    startDate,
+    endDate,
+    budget,
+  } = useLocationStore()
 
-export const LocationSummary = ({
-  destination,
-  locationType,
-  selectedClarification,
-  selectedClarificationDescription,
-  destinationPlaceholder = defaultDestinationPlaceholder,
-  locationTypePlaceholder = defaultLocationTypePlaceholder,
-  detailsPlaceholder = defaultDetailsPlaceholder,
-}: LocationSummaryProps) => {
-  const destinationLabel = destination.trim() || destinationPlaceholder
-  const locationTypeLabel = locationType.trim() || locationTypePlaceholder
+  const startFmt = formatYmd(startDate)
+  const endFmt = formatYmd(endDate)
+  const budgetHuman = budget ? budgetLabelFromValue(budget) : null
+
+  const dateLine =
+    startFmt && endFmt
+      ? `${startFmt} → ${endFmt}`
+      : startFmt
+        ? `From ${startFmt}`
+        : endFmt
+          ? `Until ${endFmt}`
+          : null
 
   return (
     <>
@@ -49,28 +54,20 @@ export const LocationSummary = ({
             <MapPin className="size-4 text-primary" aria-hidden />
           </span>
           <div className="min-w-0 flex-1 space-y-1">
-            <p
-              className={cn(
-                "text-sm font-medium",
-                destination.trim()
-                  ? "text-foreground"
-                  : "text-muted-foreground"
-              )}
-            >
-              {destinationLabel}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {locationTypeLabel}
-              {selectedClarification ? (
-                <span className="text-foreground">
-                  {" "}
-                  ·{" "}
-                  <span className="font-medium">
-                    {selectedClarification}
+            {destination ? (
+              <p className="text-sm font-medium text-foreground">{destination}</p>
+            ) : null}
+            {locationType || selectedClarification ? (
+              <p className="text-xs text-muted-foreground">
+                {locationType}
+                {selectedClarification ? (
+                  <span className="text-foreground">
+                    {locationType ? " · " : null}
+                    <span className="font-medium">{selectedClarification}</span>
                   </span>
-                </span>
-              ) : null}
-            </p>
+                ) : null}
+              </p>
+            ) : null}
             {selectedClarification ? (
               <p className="pt-1 text-xs leading-relaxed text-muted-foreground">
                 {selectedClarificationDescription}
@@ -80,9 +77,70 @@ export const LocationSummary = ({
         </div>
       </div>
 
-      <div className="rounded-xl border border-dashed border-black/15 bg-white/50 px-4 py-8 text-center text-sm text-muted-foreground">
-        {detailsPlaceholder}
-      </div>
+      {step >= 3 ? (
+        <div
+          className={cn(
+            "rounded-2xl border border-black/10 bg-gradient-to-b from-white to-muted/40",
+            "px-4 py-4 sm:px-5",
+            "shadow-[0_12px_40px_-28px_rgba(0,0,0,0.35)]",
+            "ring-1 ring-black/[0.04]"
+          )}
+        >
+          <p className="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            Trip snapshot
+          </p>
+          <div
+            className={cn(
+              "mt-3 grid gap-3",
+              dateLine && budgetHuman ? "sm:grid-cols-2" : "sm:max-w-sm"
+            )}
+          >
+            {dateLine ? (
+              <div
+                className={cn(
+                  "flex gap-3 rounded-xl border border-black/10 bg-white/90 px-3.5 py-3",
+                  "shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]"
+                )}
+              >
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-black/10 bg-muted/40">
+                  <CalendarRange
+                    className="size-4 text-primary"
+                    aria-hidden
+                  />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[0.65rem] font-medium uppercase tracking-wide text-muted-foreground">
+                    Dates
+                  </p>
+                  <p className="mt-0.5 text-sm font-medium leading-snug text-foreground">
+                    {dateLine}
+                  </p>
+                </div>
+              </div>
+            ) : null}
+            {budgetHuman ? (
+              <div
+                className={cn(
+                  "flex gap-3 rounded-xl border border-black/10 bg-white/90 px-3.5 py-3",
+                  "shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]"
+                )}
+              >
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-black/10 bg-muted/40">
+                  <Wallet className="size-4 text-primary" aria-hidden />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[0.65rem] font-medium uppercase tracking-wide text-muted-foreground">
+                    Budget
+                  </p>
+                  <p className="mt-0.5 text-sm font-medium text-foreground">
+                    {budgetHuman}
+                  </p>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
     </>
   )
 }
