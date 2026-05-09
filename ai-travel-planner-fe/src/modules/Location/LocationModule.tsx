@@ -26,7 +26,7 @@ const LocationModule = ({ className }: LocationModuleProps) => {
       {step === 2 && <LocationStep2 />}
 
       {step >= 2 && (
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6 mt-10">
           <LocationSummary
             destination={destination}
             locationType={locationType}

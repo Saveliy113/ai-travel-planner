@@ -48,4 +48,10 @@ export interface LocationStore {
   setSelectedClarificationDescription: (description: string) => void;
   locationType: string;
   setLocationType: (type: string) => void;
+  startDate: string;
+  setStartDate: (date: string) => void;
+  endDate: string;
+  setEndDate: (date: string) => void;
+  budget: string;
+  setBudget: (budget: string) => void;
 }

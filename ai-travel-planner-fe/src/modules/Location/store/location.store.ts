@@ -11,6 +11,9 @@ export const useLocationStore = create<LocationStore>((set) => ({
   clarificationOptions: [],
   selectedClarification: "",
   selectedClarificationDescription: "",
+  startDate: "",
+  endDate: "",
+  budget: "",
   setStep: (step: number) => set({ step }),
   setDestination: (destination: string) => set({ destination }),
   setFirstStepPhase: (phase: Phase) => set({ firstStepPhase: phase }),
@@ -19,4 +22,7 @@ export const useLocationStore = create<LocationStore>((set) => ({
   setSelectedClarification: (clarification: string) => set({ selectedClarification: clarification }),
   setSelectedClarificationDescription: (description: string) => set({ selectedClarificationDescription: description }),
   setLocationType: (type: string) => set({ locationType: type }),
+  setStartDate: (date: string) => set({ startDate: date }),
+  setEndDate: (date: string) => set({ endDate: date }),
+  setBudget: (budget: string) => set({ budget: budget }),
 }));

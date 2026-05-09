@@ -1,8 +1,33 @@
+import { isBefore, parse, startOfDay } from "date-fns"
+
+import { cn } from "@/lib/utils"
+import { useLocationStore } from "@/modules/Location/store/location.store"
+import { TripDatePicker } from "@/shared/ui/trip-date-picker"
+
+const BUDGET_OPTIONS = [
+  { value: "economy", label: "Economy", hint: "Hostels · street food · public transit" },
+  { value: "moderate", label: "Moderate", hint: "Mid-range stays · dine out sometimes" },
+  { value: "comfort", label: "Comfort", hint: "Nicer hotels · flexible dining" },
+  { value: "luxury", label: "Luxury", hint: "Premium stays · indulgent pace" },
+] as const
+
 /**
  * Step 2 template — demo screen after destination / clarification.
  * Trip summary is rendered in LocationModule for step 2 and above.
  */
 export const LocationStep2 = () => {
+  const {
+    startDate,
+    endDate,
+    budget,
+    setStartDate,
+    setEndDate,
+    setBudget,
+  } = useLocationStore()
+
+  const todayStart = startOfDay(new Date())
+  const parsedStart = startDate ? parse(startDate, "yyyy-MM-dd", new Date()) : undefined
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -15,6 +40,82 @@ export const LocationStep2 = () => {
         <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
           Choose the dates and budget for your trip.
         </p>
+
+        <div className="mt-3">
+          <div className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2 sm:gap-3">
+              <TripDatePicker
+                id="trip-start-date"
+                label="Start"
+                placeholder="Pick start date"
+                valueIso={startDate}
+                disabled={(day) =>
+                  isBefore(startOfDay(day), todayStart)}
+                defaultMonth={
+                  parsedStart ?? todayStart
+                }
+                onChangeIso={(iso) => {
+                  setStartDate(iso)
+                  const nextStart = iso
+                  if (
+                    nextStart &&
+                    endDate &&
+                    endDate < nextStart
+                  ) {
+                    setEndDate("")
+                  }
+                }}
+              />
+              <TripDatePicker
+                id="trip-end-date"
+                label="End"
+                placeholder="Pick end date"
+                valueIso={endDate}
+                disabled={(day) =>
+                  isBefore(
+                    startOfDay(day),
+                    parsedStart ?? todayStart
+                  )}
+                defaultMonth={
+                  endDate ? parse(endDate, "yyyy-MM-dd", new Date()) : parsedStart ?? todayStart}
+                onChangeIso={setEndDate}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-3 mt-6">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Budget level
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Pick what matches how you like to spend on the trip.
+              </p>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {BUDGET_OPTIONS.map(({ value, label, hint }) => {
+                const selected = budget === value
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setBudget(value)}
+                    className={cn(
+                      "flex flex-col items-start gap-1 rounded-xl border px-3.5 py-3 text-left transition-[background-color,border-color,box-shadow]",
+                      selected
+                        ? "border-primary/45 bg-primary/[0.07] shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] ring-2 ring-primary/20"
+                        : "border-black/12 bg-white hover:border-black/22 hover:bg-muted/40",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+                    )}
+                  >
+                    <span className="text-sm font-semibold tracking-tight text-foreground">{label}</span>
+                    <span className="text-[0.6875rem] leading-snug text-muted-foreground">{hint}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
