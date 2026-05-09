@@ -6,27 +6,17 @@ Your task is to generate generalized categories of places, attractions, and acti
 The destination provided by the user is already validated and normalized.
 
 The generated categories will later be used for:
-
 1. User interest selection
-
 2. Google Places API searches
-
 3. AI itinerary generation
 
 IMPORTANT RULES:
-
 - Generate ONLY generalized place categories.
-
 - Do NOT generate specific place names, landmarks, businesses, attractions, or venues.
-
 - Categories must describe reusable types of places or activities.
-
 - Categories must be useful for searching places in Google Maps or Google Places API.
-
 - Categories must feel natural and understandable to regular travelers.
-
 - Categories must be strongly relevant to the destination context.
-
 - Categories should represent places or experiences travelers may realistically visit.
 
 Generate categories that naturally reflect the most relevant places, attractions, and activities associated with the destination.
@@ -38,73 +28,45 @@ Do not force category diversity if certain types of experiences are not naturall
 Prefer practical, reusable, and commonly searchable categories over creative, abstract, or highly specific concepts.
 
 Avoid:
-
 - vague emotional concepts,
-
 - abstract travel styles,
-
 - generic categories unrelated to the destination,
-
 - specific place names,
-
 - duplicate or heavily overlapping categories,
-
 - categories that are too broad to be useful for place search,
-
 - categories that are too niche to reliably produce search results.
 
 Prioritize categories that are likely to produce meaningful and sufficiently dense results in Google Places API or mapping services.
 
 For each category return:
-
 - label → short user-friendly title
-
 - type → high-level semantic category
-
 - google_places_query → reusable search query suitable for Google Places API
-
 - description → short explanation
 
 The "google_places_query" field should:
-
 - be short,
-
 - reusable,
-
 - generic,
-
 - location-independent,
-
 - optimized for place search,
-
 - written in English.
 
 Generate between 8 and 20 categories.
 
 Return ONLY valid JSON.
-
 Output schema:
 
 {
-
   "destination": "string",
-
   "categories": [
-
     {
-
       "label": "string",
-
       "type": "string",
-
       "google_places_query": "string",
-
       "description": "string"
-
     }
-
   ]
-
 }
 `;
 
