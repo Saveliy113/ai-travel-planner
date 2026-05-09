@@ -1,5 +1,5 @@
 import { format, isValid, parse } from "date-fns"
-import { CalendarRange, MapPin, Wallet } from "lucide-react"
+import { CalendarRange, Compass, MapPin, Wallet } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { budgetLabelFromValue } from "@/modules/Location/model/scheme"
@@ -21,6 +21,7 @@ export const LocationSummary = () => {
     startDate,
     endDate,
     budget,
+    selectedInterestLabels,
   } = useLocationStore()
 
   const startFmt = formatYmd(startDate)
@@ -138,6 +139,42 @@ export const LocationSummary = () => {
                 </div>
               </div>
             ) : null}
+          </div>
+
+          <div className="mt-4 border-t border-black/10 pt-4">
+            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              Selected interests
+            </p>
+            {selectedInterestLabels.length > 0 ? (
+              <ul className="mt-2.5 flex flex-wrap gap-2" aria-label="Selected interests">
+                {selectedInterestLabels.map((label) => (
+                  <li key={label}>
+                    <span
+                      className={cn(
+                        "inline-flex items-center rounded-full border border-primary/35 bg-primary/[0.08] px-3 py-1",
+                        "text-xs font-medium text-foreground"
+                      )}
+                    >
+                      {label}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div
+                className={cn(
+                  "mt-2.5 flex gap-3 rounded-xl border border-dashed border-black/15 bg-muted/15 px-3.5 py-4 sm:py-5"
+                )}
+              >
+                <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg border border-black/10 bg-white/90">
+                  <Compass className="size-4 text-muted-foreground" aria-hidden />
+                </span>
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  Pick at least one interest on step 3 — they anchor place search and day
+                  layouts. Your choices appear here when selected.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       ) : null}

@@ -21,6 +21,7 @@ export const useLocationStore = create<LocationStore>((set) => ({
   budget: "",
   interestCategories: [],
   selectedInterestLabels: [],
+  additionalPreferences: "",
   setStep: (step: number) => set({ step }),
   setDestination: (destination: string) => set({ destination }),
   setFirstStepPhase: (phase: Phase) => set({ firstStepPhase: phase }),
@@ -46,4 +47,6 @@ export const useLocationStore = create<LocationStore>((set) => ({
           : [...state.selectedInterestLabels, label],
       }
     }),
+  setAdditionalPreferences: (additionalPreferences: string) =>
+    set({ additionalPreferences }),
 }));

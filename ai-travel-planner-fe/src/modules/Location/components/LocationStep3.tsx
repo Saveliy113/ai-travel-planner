@@ -1,7 +1,8 @@
-import { Compass } from "lucide-react"
+import { ArrowRight, Compass } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { useLocationStore } from "@/modules/Location/store/location.store"
+import { Button } from "@/shared/ui/button"
 
 /**
  * Step 3 — pick one or more interest categories from LLM recommendations.
@@ -11,6 +12,7 @@ export const LocationStep3 = () => {
     interestCategories,
     selectedInterestLabels,
     toggleInterestSelection,
+    setStep,
   } = useLocationStore()
 
   return (
@@ -77,6 +79,18 @@ export const LocationStep3 = () => {
           Selected interests drive Google-style place searches and later day plans.
           You can always refine them in a future step.
         </p>
+      </div>
+
+      <div className="flex justify-end border-t border-black/10 pt-4">
+        <Button
+          className="gap-1.5 rounded-full px-5 shadow-sm"
+          disabled={selectedInterestLabels.length === 0}
+          onClick={() => setStep(4)}
+          type="button"
+        >
+          Next
+          <ArrowRight className="size-4" aria-hidden />
+        </Button>
       </div>
     </div>
   )

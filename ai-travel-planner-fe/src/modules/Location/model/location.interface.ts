@@ -69,4 +69,6 @@ export interface LocationStore {
   setInterestCategories: (categories: TravelInterestCategory[]) => void;
   selectedInterestLabels: string[];
   toggleInterestSelection: (label: string) => void;
+  additionalPreferences: string;
+  setAdditionalPreferences: (value: string) => void;
 }
