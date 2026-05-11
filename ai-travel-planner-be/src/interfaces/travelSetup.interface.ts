@@ -33,3 +33,13 @@ export interface TravelSetupGenerateResult {
   ok: boolean;
   message?: string;
 }
+
+export interface GeocodingResponseI {
+  results: GeocodingResultItem[];
+}
+
+export interface GeocodingResultItem {
+  name: string;
+  latitude: number;
+  longitude: number;
+}
