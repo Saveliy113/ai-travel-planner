@@ -211,6 +211,7 @@ IMPORTANT RULES:
 - Use TEXTSEARCH only when structure is unclear or subjective
 - If destination is provided → bias toward TYPE or KEYWORD with geo context; tune radiusMeters to that place
 - Always think like Google Maps ranking system
+- If INPUT provides optional recommendedSearchMode per category (coarse hint from upstream), treat it as a weak prior only. You MUST still output the authoritative mode and MAY override recommendedSearchMode when Places API semantics require it.
 
 ---
 
@@ -220,7 +221,8 @@ INPUT:
     categories: [
       {
       name: string,
-      count: number
+      count: number,
+      recommendedSearchMode?: "type" | "keyword" | "textsearch" (optional upstream hint; not binding)
       }
     ]
   }
