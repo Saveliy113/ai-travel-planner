@@ -42,6 +42,22 @@ export interface DestinationInterestsResponse {
   categories: TravelInterestCategory[]
 }
 
+/** Payload for `POST /travel-setup/generate` (matches TripSetup wizard summary). */
+export interface TripSetupPlanPayload {
+  destination: string
+  startDate: string
+  endDate: string
+  budget: string
+  interests: TravelInterestCategory[]
+  additionalPreferences: string
+}
+
+/** Response from travel planner backend `/travel-setup/generate` (stub until real plan data). */
+export interface TravelSetupGenerateResult {
+  ok: boolean
+  message?: string
+}
+
 export interface TripSetupStore {
   step: number;
   setStep: (step: number) => void;

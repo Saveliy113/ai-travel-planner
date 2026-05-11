@@ -1,9 +1,12 @@
+import { toast } from "sonner"
+
 import { cn } from "@/lib/utils"
 import { AdditionalPreferencesForm } from "@/modules/TripSetup/components/AdditionalPreferencesForm"
 import { DatesBudgetForm } from "@/modules/TripSetup/components/DatesBudgetForm"
 import { DestinationForm } from "@/modules/TripSetup/components/DestinationForm"
 import { InterestsForm } from "@/modules/TripSetup/components/InterestsForm"
 import { TripSetupSummary } from "@/modules/TripSetup/components/TripSetupSummary"
+import { generateTravelSetupPlan } from "@/modules/TripSetup/api/travelPlanner.api"
 import type { TripSetupModuleProps } from "@/modules/TripSetup/model/tripSetup.interface"
 import { Button } from "@/shared/ui/button"
 import { useTripSetupStore } from "./store/tripSetup.store"
@@ -11,20 +14,23 @@ import { useTripSetupStore } from "./store/tripSetup.store"
 const TripSetupModule = ({ className }: TripSetupModuleProps) => {
   const tripSetupStore = useTripSetupStore()
 
-  const handleCreatePlan = () => {
-    const s = useTripSetupStore.getState()
-    const payload = {
-      destination: `${s.normalizedDestination}${s.selectedClarification ? `, ${s.selectedClarification}` : ""}`,
-      startDate: s.startDate,
-      endDate: s.endDate,
-      budget: s.budget,
-      interests: s.interestCategories.filter((c) =>
-        s.selectedInterestLabels.includes(c.label),
-      ),
-      additionalPreferences: s.additionalPreferences,
+  const handleCreatePlan = async (): Promise<void> => {
+    try {
+      const s = useTripSetupStore.getState()
+      const travelPlan = await generateTravelSetupPlan({
+        destination: `${s.normalizedDestination}${s.selectedClarification ? `, ${s.selectedClarification}` : ""}`,
+        startDate: s.startDate,
+        endDate: s.endDate,
+        budget: s.budget,
+        interests: s.interestCategories.filter((c) =>
+          s.selectedInterestLabels.includes(c.label),
+        ),
+        additionalPreferences: s.additionalPreferences,
+      })
+      console.log("[Create Plan] travel plan", travelPlan)
+    } catch (error) {
+      toast.error(String(error))
     }
-    console.log("[Create Plan] wizard payload", payload)
-    // TODO: Implement plan creation
   }
 
   return (
