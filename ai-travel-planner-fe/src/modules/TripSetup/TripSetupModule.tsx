@@ -5,10 +5,27 @@ import { DestinationForm } from "@/modules/TripSetup/components/DestinationForm"
 import { InterestsForm } from "@/modules/TripSetup/components/InterestsForm"
 import { TripSetupSummary } from "@/modules/TripSetup/components/TripSetupSummary"
 import type { TripSetupModuleProps } from "@/modules/TripSetup/model/tripSetup.interface"
+import { Button } from "@/shared/ui/button"
 import { useTripSetupStore } from "./store/tripSetup.store"
 
 const TripSetupModule = ({ className }: TripSetupModuleProps) => {
-  const { step } = useTripSetupStore()
+  const tripSetupStore = useTripSetupStore()
+
+  const handleCreatePlan = () => {
+    const s = useTripSetupStore.getState()
+    const payload = {
+      destination: `${s.normalizedDestination}${s.selectedClarification ? `, ${s.selectedClarification}` : ""}`,
+      startDate: s.startDate,
+      endDate: s.endDate,
+      budget: s.budget,
+      interests: s.interestCategories.filter((c) =>
+        s.selectedInterestLabels.includes(c.label),
+      ),
+      additionalPreferences: s.additionalPreferences,
+    }
+    console.log("[Create Plan] wizard payload", payload)
+    // TODO: Implement plan creation
+  }
 
   return (
     <div
@@ -17,15 +34,28 @@ const TripSetupModule = ({ className }: TripSetupModuleProps) => {
         className
       )}
     >
-      {step === 1 && <DestinationForm />}
+      {tripSetupStore.step === 1 && <DestinationForm />}
 
-      {step === 2 && <DatesBudgetForm />}
+      {tripSetupStore.step === 2 && <DatesBudgetForm />}
 
-      {step === 3 && <InterestsForm />}
+      {tripSetupStore.step === 3 && <InterestsForm />}
 
-      {step === 4 && <AdditionalPreferencesForm />}
 
-      {step >= 2 && (
+      {tripSetupStore.step === 4 && <AdditionalPreferencesForm />}
+
+      {tripSetupStore.step === 4 ? (
+        <div className="flex justify-end border-t border-black/10 pt-4">
+          <Button
+            className="rounded-full px-6 shadow-sm"
+            onClick={handleCreatePlan}
+            type="button"
+          >
+            Create Plan
+          </Button>
+        </div>
+      ) : null}
+
+      {tripSetupStore.step >= 2 && (
         <div className="flex flex-col gap-6 mt-10">
           <TripSetupSummary />
         </div>

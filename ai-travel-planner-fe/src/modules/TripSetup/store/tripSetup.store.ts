@@ -10,6 +10,7 @@ import type {
 export const useTripSetupStore = create<TripSetupStore>((set) => ({
   step: 1,
   destination: "",
+  normalizedDestination: "",
   locationType: "",
   firstStepPhase: "input",
   clarificationReason: "",
@@ -24,6 +25,7 @@ export const useTripSetupStore = create<TripSetupStore>((set) => ({
   additionalPreferences: "",
   setStep: (step: number) => set({ step }),
   setDestination: (destination: string) => set({ destination }),
+  setNormalizedDestination: (destination: string) => set({ normalizedDestination: destination.trim() }),
   setFirstStepPhase: (phase: Phase) => set({ firstStepPhase: phase }),
   setClarificationReason: (reason: string) => set({ clarificationReason: reason }),
   setClarificationOptions: (options: DestinationClarificationOption[]) =>

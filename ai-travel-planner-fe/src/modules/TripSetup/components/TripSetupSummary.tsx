@@ -14,7 +14,7 @@ function formatYmd(ymd: string): string | null {
 export const TripSetupSummary = () => {
   const {
     step,
-    destination,
+    normalizedDestination,
     locationType,
     selectedClarification,
     selectedClarificationDescription,
@@ -55,8 +55,8 @@ export const TripSetupSummary = () => {
             <MapPin className="size-4 text-primary" aria-hidden />
           </span>
           <div className="min-w-0 flex-1 space-y-1">
-            {destination ? (
-              <p className="text-sm font-medium text-foreground">{destination}</p>
+            {normalizedDestination ? (
+              <p className="text-sm font-medium text-foreground">{normalizedDestination}</p>
             ) : null}
             {locationType || selectedClarification ? (
               <p className="text-xs text-muted-foreground">

@@ -15,6 +15,7 @@ export const DestinationForm = () => {
     destination,
     clarificationReason,
     setDestination,
+    setNormalizedDestination,
     setStep,
     setClarificationReason,
     setFirstStepPhase,
@@ -41,6 +42,7 @@ export const DestinationForm = () => {
           else {
             // If validation failed (data.clarificationRequired is true),
             // set clarification required and proceed to clarification step
+            setNormalizedDestination(data.normalizedLocation)
             setLocationType(data.locationType)
             setClarificationReason(data.clarificationReason)
             setClarificationOptions(data.clarificationOptions)

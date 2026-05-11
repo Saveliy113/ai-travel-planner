@@ -47,6 +47,8 @@ export interface TripSetupStore {
   setStep: (step: number) => void;
   destination: string;
   setDestination: (destination: string) => void;
+  normalizedDestination: string;
+  setNormalizedDestination: (destination: string) => void;
   firstStepPhase: Phase;
   setFirstStepPhase: (phase: Phase) => void;
   clarificationReason: string;

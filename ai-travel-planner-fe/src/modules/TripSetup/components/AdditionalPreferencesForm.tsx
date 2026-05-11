@@ -4,31 +4,6 @@ import {
   additionalPreferencesFieldId,
 } from "@/modules/TripSetup/model/scheme"
 import { useTripSetupStore } from "@/modules/TripSetup/store/tripSetup.store"
-import { Button } from "@/shared/ui/button"
-
-function logWizardPayload(): void {
-  const s = useTripSetupStore.getState()
-  const payload = {
-    step: s.step,
-    destination: s.destination,
-    locationType: s.locationType,
-    firstStepPhase: s.firstStepPhase,
-    clarificationReason: s.clarificationReason,
-    clarificationOptions: s.clarificationOptions,
-    selectedClarification: s.selectedClarification,
-    selectedClarificationDescription: s.selectedClarificationDescription,
-    startDate: s.startDate,
-    endDate: s.endDate,
-    budget: s.budget,
-    interestCategories: s.interestCategories,
-    selectedInterestLabels: s.selectedInterestLabels,
-    selectedInterests: s.interestCategories.filter((c) =>
-      s.selectedInterestLabels.includes(c.label)
-    ),
-    additionalPreferences: s.additionalPreferences,
-  }
-  console.log("[Create Plan] wizard payload", payload)
-}
 
 /**
  * Step 4 — free-text additional preferences for the planner.
@@ -91,16 +66,6 @@ export const AdditionalPreferencesForm = () => {
             </button>
           ))}
         </div>
-      </div>
-
-      <div className="flex justify-end border-t border-black/10 pt-4">
-        <Button
-          className="rounded-full px-6 shadow-sm"
-          onClick={logWizardPayload}
-          type="button"
-        >
-          Create Plan
-        </Button>
       </div>
     </div>
   )
