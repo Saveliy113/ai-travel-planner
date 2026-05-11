@@ -1,1 +1,1 @@
-export { locationApi } from "@/app/api/client"
+export { travelPlannerApi } from "@/app/api/client"

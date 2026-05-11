@@ -2,8 +2,8 @@ import 'reflect-metadata';
 import 'dotenv/config';
 
 import App from './loaders/app';
-import { AliveRoutes, ValidationRoutes } from './routes/index';
+import { AliveRoutes, TravelSetupRoutes, ValidationRoutes } from './routes/index';
 
-const app = new App([new AliveRoutes(), new ValidationRoutes()]);
+const app = new App([new AliveRoutes(), new ValidationRoutes(), new TravelSetupRoutes()]);
 
 app.listen();
