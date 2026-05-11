@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils"
-import LocationModule from "@/modules/Location/LocationModule"
+import TripSetupModule from "@/modules/TripSetup/TripSetupModule"
 import { HeroHeadingTypewriter } from "@/shared/ui/hero-heading-typewriter"
 
 const HERO_EMOJIS = ["✈️", "🌍", "🗼", "🏖️", "🧳", "🌴", "🎒", "📍"] as const
@@ -34,7 +34,7 @@ export const MainPage = () => {
           <HeroHeadingTypewriter text={HERO_HEADING} />
 
           <div className="w-full max-w-xl">
-            <LocationModule />
+            <TripSetupModule />
           </div>
         </div>
       </main>

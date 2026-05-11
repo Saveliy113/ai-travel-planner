@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query"
 
-import { validateDestinationRequest } from "@/modules/Location/api/validation"
+import { validateDestinationRequest } from "@/modules/TripSetup/api/validation"
 
 export function useValidateDestinationQuery() {
   return useMutation({

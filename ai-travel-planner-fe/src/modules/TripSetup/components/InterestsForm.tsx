@@ -1,19 +1,19 @@
 import { ArrowRight, Compass } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { useLocationStore } from "@/modules/Location/store/location.store"
+import { useTripSetupStore } from "@/modules/TripSetup/store/tripSetup.store"
 import { Button } from "@/shared/ui/button"
 
 /**
  * Step 3 — pick one or more interest categories from LLM recommendations.
  */
-export const LocationStep3 = () => {
+export const InterestsForm = () => {
   const {
     interestCategories,
     selectedInterestLabels,
     toggleInterestSelection,
     setStep,
-  } = useLocationStore()
+  } = useTripSetupStore()
 
   return (
     <div className="flex flex-col gap-6">

@@ -1,5 +1,5 @@
 import { locationApi } from "@/app/api"
-import type { DestinationValidationResult } from "@/modules/Location/model/location.interface"
+import type { DestinationValidationResult } from "@/modules/TripSetup/model/tripSetup.interface"
 import { normalizeApiError } from "@/shared/api/normalizeApiError"
 
 export async function validateDestinationRequest(

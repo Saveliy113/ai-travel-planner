@@ -2,8 +2,8 @@ import { format, isValid, parse } from "date-fns"
 import { CalendarRange, Compass, MapPin, Wallet } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { budgetLabelFromValue } from "@/modules/Location/model/scheme"
-import { useLocationStore } from "@/modules/Location/store/location.store"
+import { budgetLabelFromValue } from "@/modules/TripSetup/model/scheme"
+import { useTripSetupStore } from "@/modules/TripSetup/store/tripSetup.store"
 
 function formatYmd(ymd: string): string | null {
   if (!ymd.trim()) return null
@@ -11,7 +11,7 @@ function formatYmd(ymd: string): string | null {
   return isValid(d) ? format(d, "MMM d, yyyy") : null
 }
 
-export const LocationSummary = () => {
+export const TripSetupSummary = () => {
   const {
     step,
     destination,
@@ -22,7 +22,7 @@ export const LocationSummary = () => {
     endDate,
     budget,
     selectedInterestLabels,
-  } = useLocationStore()
+  } = useTripSetupStore()
 
   const startFmt = formatYmd(startDate)
   const endFmt = formatYmd(endDate)

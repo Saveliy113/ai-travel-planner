@@ -4,12 +4,12 @@ import { cn } from "@/lib/utils"
 import {
   DESTINATION_SUGGESTIONS,
   destinationFieldId,
-} from "@/modules/Location/model/scheme"
+} from "@/modules/TripSetup/model/scheme"
 import { Button } from "@/shared/ui/button"
-import { useValidateDestinationQuery } from "@/modules/Location/queries/validation.query"
-import { useLocationStore } from "@/modules/Location/store/location.store"
+import { useValidateDestinationQuery } from "@/modules/TripSetup/queries/validation.query"
+import { useTripSetupStore } from "@/modules/TripSetup/store/tripSetup.store"
 
-export const DestinationStep = () => {
+export const DestinationForm = () => {
   const {
     firstStepPhase,
     destination,
@@ -24,7 +24,7 @@ export const DestinationStep = () => {
     setSelectedClarification,
     setLocationType,
     setSelectedClarificationDescription,
-  } = useLocationStore()
+  } = useTripSetupStore()
 
   const { mutate: validateDestination, isPending } = useValidateDestinationQuery()
 

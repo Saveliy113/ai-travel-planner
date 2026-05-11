@@ -2,12 +2,12 @@ import { create } from "zustand"
 
 import type {
   DestinationClarificationOption,
-  LocationStore,
   Phase,
   TravelInterestCategory,
-} from "@/modules/Location/model/location.interface"
+  TripSetupStore,
+} from "@/modules/TripSetup/model/tripSetup.interface"
 
-export const useLocationStore = create<LocationStore>((set) => ({
+export const useTripSetupStore = create<TripSetupStore>((set) => ({
   step: 1,
   destination: "",
   locationType: "",

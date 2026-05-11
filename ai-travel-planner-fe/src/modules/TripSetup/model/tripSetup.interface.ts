@@ -1,4 +1,4 @@
-export interface LocationModuleProps {
+export interface TripSetupModuleProps {
   className?: string
 }
 
@@ -38,11 +38,11 @@ export interface TravelInterestCategory {
   description: string
 }
 
-export interface LocationInterestsResponse {
+export interface DestinationInterestsResponse {
   categories: TravelInterestCategory[]
 }
 
-export interface LocationStore {
+export interface TripSetupStore {
   step: number;
   setStep: (step: number) => void;
   destination: string;

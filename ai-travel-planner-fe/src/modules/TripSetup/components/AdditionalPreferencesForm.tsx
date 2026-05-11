@@ -2,12 +2,12 @@ import { cn } from "@/lib/utils"
 import {
   ADDITIONAL_PREFERENCES_SUGGESTIONS,
   additionalPreferencesFieldId,
-} from "@/modules/Location/model/scheme"
-import { useLocationStore } from "@/modules/Location/store/location.store"
+} from "@/modules/TripSetup/model/scheme"
+import { useTripSetupStore } from "@/modules/TripSetup/store/tripSetup.store"
 import { Button } from "@/shared/ui/button"
 
 function logWizardPayload(): void {
-  const s = useLocationStore.getState()
+  const s = useTripSetupStore.getState()
   const payload = {
     step: s.step,
     destination: s.destination,
@@ -33,8 +33,8 @@ function logWizardPayload(): void {
 /**
  * Step 4 — free-text additional preferences for the planner.
  */
-export const LocationStep4 = () => {
-  const { additionalPreferences, setAdditionalPreferences } = useLocationStore()
+export const AdditionalPreferencesForm = () => {
+  const { additionalPreferences, setAdditionalPreferences } = useTripSetupStore()
 
   const appendSuggestion = (text: string): void => {
     const t = additionalPreferences.trim()

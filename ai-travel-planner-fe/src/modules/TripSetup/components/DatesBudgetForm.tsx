@@ -3,9 +3,9 @@ import { useState } from "react"
 import { isBefore, parse, startOfDay } from "date-fns"
 import { ArrowRight, Loader2 } from "lucide-react"
 
-import { fetchLocationInterests } from "@/modules/Location/api/interests.api"
-import { BUDGET_LEVEL_OPTIONS } from "@/modules/Location/model/scheme"
-import { useLocationStore } from "@/modules/Location/store/location.store"
+import { fetchDestinationInterests } from "@/modules/TripSetup/api/travelPlanner.api"
+import { BUDGET_LEVEL_OPTIONS } from "@/modules/TripSetup/model/scheme"
+import { useTripSetupStore } from "@/modules/TripSetup/store/tripSetup.store"
 import { Button } from "@/shared/ui/button"
 import { TripDatePicker } from "@/shared/ui/trip-date-picker"
 import { cn } from "@/lib/utils"
@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils"
 /**
  * Step 2 — dates, budget, then fetch interest recommendations for the destination.
  */
-export const LocationStep2 = () => {
+export const DatesBudgetForm = () => {
   const {
     destination,
     startDate,
@@ -24,7 +24,7 @@ export const LocationStep2 = () => {
     setBudget,
     setStep,
     setInterestCategories,
-  } = useLocationStore()
+  } = useTripSetupStore()
 
   const [interestsPending, setInterestsPending] = useState(false)
   const [interestsError, setInterestsError] = useState<string | null>(null)
@@ -38,7 +38,7 @@ export const LocationStep2 = () => {
     setInterestsError(null)
     setInterestsPending(true)
     try {
-      const data = await fetchLocationInterests(dest)
+      const data = await fetchDestinationInterests(dest)
       setInterestCategories(data.categories)
       setStep(3)
     } catch (e) {
