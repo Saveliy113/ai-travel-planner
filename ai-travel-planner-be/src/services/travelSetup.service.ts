@@ -27,6 +27,16 @@ class TravelSetupService {
       logger.info(`[TravelSetupService] Location: ${body.destination}; Latitude: ${targetLocationData.latitude}; Longitude: ${targetLocationData.longitude}`);
 
       // Getting weather information via Weather Agent
+      logger.info(`[TravelSetupService] Getting weather information via Weather Agent by lat=${targetLocationData.latitude} and lon=${targetLocationData.longitude}`);
+      const { data: weatherData } = await axios.get(`${process.env.AI_WEATHER_AGENT_URL}/forecast`, {
+        params: {
+          lat: targetLocationData.latitude,
+          lon: targetLocationData.longitude,
+          startDate: body.startDate,
+          endDate: body.endDate,
+        },
+      });
+      logger.info(`[TravelSetupService] Weather information loaded successfully`);
 
       // Getting POI information via Location Agent
 
