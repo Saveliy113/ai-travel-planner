@@ -143,7 +143,7 @@ export const LocationSummary = () => {
 
           <div className="mt-4 border-t border-black/10 pt-4">
             <p className="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-              Selected interests
+              Interests
             </p>
             {selectedInterestLabels.length > 0 ? (
               <ul className="mt-2.5 flex flex-wrap gap-2" aria-label="Selected interests">
