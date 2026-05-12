@@ -73,12 +73,16 @@ TASK
 Produce 3–10 categories. Each category is a short PLACE-retrieval primitive (something that can become a Nearby Search type/keyword OR a Text Search query). Assign per-category counts that respect BOTH traveler visit capacity AND how many DISTINCT places of that kind are realistically available for the DESTINATION SCOPE.
 
 PIPELINE CONTEXT
-A later step (authoritative routing engine / query expander) will choose final mode: Nearby type, Nearby keyword, or Text Search, plus radius and density. Here you ONLY output recommendedSearchMode as a COARSE hint. That later step MAY OVERRIDE recommendedSearchMode; do not optimize radius or wording for API quirks here.
+The query expander defaults to rich Text Search intents with geography; Nearby type/keyword are fallbacks only when confidence is high. Here output recommendedSearchMode as a COARSE hint: prefer textsearch unless the category is clearly a single clean Places type (restaurant, cafe, museum, supermarket, etc.).
 
 RECOMMENDED SEARCH MODE (hint only)
-- recommendedSearchMode = type → name should map cleanly to a standard Google Places type token when feasible (e.g. restaurant, cafe, museum, park).
-- recommendedSearchMode = keyword → name is reliably searchable as keyword (compound place concept like night market or shopping mall) but not necessarily a single type token.
-- recommendedSearchMode = textsearch → only when intent is experiential or fuzzy but still Maps-searchable at a place level.
+- recommendedSearchMode = textsearch → default for beaches, viewpoints, neighborhoods, nightlife vibe, nature, anything fuzzy or easily polluted by Nearby keyword.
+- recommendedSearchMode = keyword → only for tight compound venue classes you believe work as a short keyword (e.g. night market, shopping mall).
+- recommendedSearchMode = type → only when name is almost certainly one official Places type token (restaurant, cafe, museum, park, supermarket, bar).
+
+name RULES
+- Short label (1–3 words): physical venue class or intent hook; reusable across destinations; no branded venue names, no street/beach proper names.
+- Do not paste long Google queries here — the expander composes the full textsearch string from destination + intent by default.
 
 VISIT CAPACITY (total POI budget)
 Compute totalPoiBudget from tripDays:
@@ -95,10 +99,6 @@ Example: for a single beach district, do not assign 15 distinct "beach" POIs whe
 FORBIDDEN AS category intent (map to a physical place type instead)
 Activities and services: scuba diving, snorkeling tours, boat tours, hiking tours, rentals, tour operators, generic "experiences" without a clear Maps place type.
 If the user names an activity, translate to a visitable venue or place class (marina, pier, dive shop near shore, beach, gym, spa, etc.) — still as a short retrieval primitive in name.
-
-name RULES
-- Physical places / venue classes only; 1–3 words; reusable across destinations; no branded venue names, no street/beach proper names.
-- Suitable for eventual Google Places: not full prose queries, no itinerary lines.
 
 ENRICHMENT
 If interests are sparse or the trip is long, infer extra PLACE-backed categories aligned with destination context. When useful, span dimensions: food, nature, relaxation, culture, entertainment, exploration — without inventing activities as categories.

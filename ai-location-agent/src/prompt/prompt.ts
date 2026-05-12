@@ -138,26 +138,52 @@ NO EXTRA TEXT.
 export const QUERY_EXPANDER_PROMPT = `
 You are a Google Places routing engine.
 
-Your task is to select the optimal Google Places search strategy and a search radius in meters for each category.
+Your task is, for each incoming category, to choose how to retrieve POIs: default to a composed SEARCH INTENT (Text Search), and fall back to Nearby type or keyword ONLY when you are highly confident that strict type/keyword will stay clean and unambiguous.
 
 ---
 
-AVAILABLE MODES:
+PRIORITY (DO NOT INVERT)
 
-1. TYPE SEARCH
-Use when category maps directly to a Google Places type.
-Examples:
-cafe, restaurant, hotel, park, gym, supermarket, museum
+1) DEFAULT — TEXT SEARCH (mode=textsearch)
+First formulate a clear natural-language search intent that a traveler would type in Google Maps, then disambiguate geography using INPUT.destination so results are not pulled to the wrong country/region.
+Put that ENTIRE string in "name" (see OUTPUT). This is your normal path for most travel categories (beaches, viewpoints, neighborhoods, vibes, activities grounded in places, mixed intents, anything where Nearby keyword would catch bars/hotels/wrong brands).
 
-2. KEYWORD SEARCH
-Use when intent is a modifier + place concept OR type is too broad.
-Examples:
-beach, rooftop bar, night market, shopping mall, hiking trail
+2) FALLBACK — Nearby KEYWORD (mode=keyword)
+Use ONLY if you have HIGH confidence that a short keyword alone will return the right class of POIs without polluting with unrelated businesses (e.g. some shopping-mall or night-market style queries in dense areas). If unsure, stay on textsearch.
 
-3. TEXT SEARCH
-Use when query is experiential, subjective, or cannot be mapped reliably.
-Examples:
-sunset spot, scenic viewpoint, hidden gem, aesthetic place, vibe location
+3) LAST RESORT — Nearby TYPE (mode=type)
+Use ONLY if the category maps to a single standard Google Places type token AND you have HIGH confidence that type results will not be misleading for this destination (e.g. restaurant, cafe, museum, supermarket in typical urban contexts). Natural features, beaches, sunsets, “hidden” spots, or fuzzy labels must NOT be forced into type.
+
+When in doubt → textsearch with a rich intent string + geography.
+
+---
+
+AVAILABLE MODES (reference)
+
+TEXT SEARCH (default)
+- Full search intent in "name", including destination context (see SEARCH INTENT CONSTRUCTION).
+
+KEYWORD SEARCH (fallback)
+- Short Nearby keyword in "name" (1–3 words).
+Examples: night market, shopping mall (only when highly confident).
+
+TYPE SEARCH (fallback)
+- A single valid Places type token in "name".
+Examples: restaurant, cafe, museum, park, supermarket.
+
+---
+
+SEARCH INTENT CONSTRUCTION (when mode=textsearch)
+
+Without geography, Google often spreads results worldwide. ALWAYS anchor with INPUT.destination (reuse as-is when it already names city/region/country; otherwise minimally expand).
+
+Preferred patterns:
+- "{intent} in {area} {country}" Examples: beach in Phuket Thailand; rooftop bar in Patong Phuket Thailand
+- Alternate when natural: "{intent} {area with country}" Example: scenic sunset viewpoint Patong Phuket Thailand
+
+Rules:
+- "name" for textsearch is exactly this full query string (normal English, spaces OK; never hand-encoding +/%20 thinking).
+- For keyword/type fallbacks, "name" must stay a short token as above — never paste the long prose used for textsearch.
 
 ---
 
@@ -185,7 +211,7 @@ DENSITY RULES:
 
 RADIUS (radiusMeters):
 
-- You MUST output radiusMeters (integer) per category for use with location-biased Places search (e.g. nearby-style queries from lat/lon).
+- You MUST output radiusMeters (integer) per category for use with location-biased Nearby Search (lat/lon circle) when mode is keyword or type.
 - Do NOT use one fixed global table as the final radius. Defaults below are anchors only; scale up or down using INPUT: lat, lon, and destination/context when provided.
 
 Default anchors (compact urban / generic — adjust by destination):
@@ -206,18 +232,15 @@ Combine density + destination + category in reason when explaining radius.
 
 IMPORTANT RULES:
 
-- Prefer TYPE when exact match exists
-- Prefer KEYWORD when intent adds meaning to a category
-- Use TEXTSEARCH only when structure is unclear or subjective
-- If destination is provided → bias toward TYPE or KEYWORD with geo context; tune radiusMeters to that place
-- Always think like Google Maps ranking system
-- If INPUT provides optional recommendedSearchMode per category (coarse hint from upstream), treat it as a weak prior only. You MUST still output the authoritative mode and MAY override recommendedSearchMode when Places API semantics require it.
+- Bias toward textsearch + rich "name" unless you have high confidence a shorter keyword/type is safe (state that tradeoff briefly in "reason").
+- recommendedSearchMode from INPUT is a weak prior only; you choose the final mode and may override it.
+- Always think like Google Maps ranking and how noisy Nearby results can be for broad words (beach, sunset, bar).
 
 ---
 
 INPUT:
   {
-    destination: string | null (human place name or region, e.g. city or island — use for radius scaling when present)
+    destination: string | null (human place name or region — use for intent text and radius scaling)
     categories: [
       {
       name: string,
@@ -229,16 +252,22 @@ INPUT:
 
 ---
 
-OUTPUT JSON (strict array, one object per category name in order):
+OUTPUT JSON (strict array, one object per INPUT category slot, SAME ORDER):
+
 [
   {
     "name": string,
-    "count": number (return as was passed in INPUT),
+    "count": number (same as INPUT for that slot),
     "mode": "type | keyword | textsearch",
     "confidence": 0.0-1.0,
     "density": "dense | medium | sparse",
     "radiusMeters": integer,
-    "reason": "short explanation (mode + density + why this radius for this destination)"
+    "reason": "short explanation: why textsearch intent vs why type/keyword fallback if used; density + radius rationale"
   }
 ]
+
+"name" field rules:
+- mode=textsearch → "name" is the COMPLETE Text Search query string (search intent + geography per SEARCH INTENT CONSTRUCTION). It will NOT match the short INPUT category label; rows are matched by array order with INPUT.
+- mode=keyword → "name" is the short Nearby keyword only.
+- mode=type → "name" is a single Places type token only.
 `;

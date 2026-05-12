@@ -1,9 +1,13 @@
 import axios from 'axios';
 
 import type { TravelSetupGenerateBody, TravelSetupGenerateResult } from '../interfaces/travelSetup.interface';
+import { openai } from '../loaders/openai';
+import { POI_CATEGORIES_PROMPT } from '../prompts/prompt';
 import { logger } from '../utils/logger';
 
 class TravelSetupService {
+  private llmModel = process.env.OPENAI_MODEL || 'gpt-5-mini-2025-08-07';
+
   public async generate(body: TravelSetupGenerateBody): Promise<TravelSetupGenerateResult> {
     try {
       logger.info(`[TravelSetupService] generate (stub) destination="${body.destination}"`);
@@ -37,6 +41,19 @@ class TravelSetupService {
         },
       });
       logger.info(`[TravelSetupService] Weather information loaded successfully`);
+
+      // Generating POI categories list according to interests and preferences via OpenAI API
+      logger.info(`[TravelSetupService] Generating POI categories list according to interests and preferences`);
+      const completion = await openai.chat.completions.create({
+        model: this.llmModel,
+        messages: [
+          {
+            role: 'system',
+            content: POI_CATEGORIES_PROMPT,
+          },
+        ],
+      });
+      
 
       // Getting POI information via Location Agent
 
