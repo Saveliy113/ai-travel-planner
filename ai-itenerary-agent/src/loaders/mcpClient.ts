@@ -9,7 +9,7 @@ if (!AI_WEATHER_AGENT_URL) {
 }
 
 
-let weatherAgentClient: Client | null = null;
+let weatherAgentClient: Client;
 (async () => {
     try {
         const transport = new SSEClientTransport(new URL(`${AI_WEATHER_AGENT_URL}/mcp/sse`));
@@ -17,8 +17,9 @@ let weatherAgentClient: Client | null = null;
             name: 'weather-agent',
             version: '1.0.0',
         });
-
         await weatherAgentClient.connect(transport);
+        const { tools: weatherTools } = await weatherAgentClient.listTools();
+        logger.info(`🌤️ Tools: ${JSON.stringify(weatherTools)}`);
         logger.info('🌤️ Connected to weather agent');
     } catch (error) {
         logger.error(`[MCP Client] Error connecting to weather agent: ${error}`);

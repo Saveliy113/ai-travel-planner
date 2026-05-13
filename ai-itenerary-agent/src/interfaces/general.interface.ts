@@ -1,4 +1,5 @@
 import { Request } from 'express';
+import type { ChatCompletionFunctionTool } from 'openai/resources/chat/completions';
 
 interface SqlQueryConstructorData {
   whereClause: string;
@@ -18,4 +19,24 @@ interface GeneralRequestQuery<T> extends Request<
   T
 > {}
 
-export { SqlQueryConstructorData, GeneralGetByQueryResponse, GeneralRequestQuery };
+/** One tool from MCP Client#listTools() (JSON Schema inputSchema). */
+interface McpToolDefinition {
+  name: string;
+  description?: string;
+  inputSchema: {
+    type?: string;
+    properties?: Record<string, object>;
+    required?: string[];
+    [key: string]: unknown;
+  };
+}
+
+type OpenAITool = ChatCompletionFunctionTool;
+
+export {
+  SqlQueryConstructorData,
+  GeneralGetByQueryResponse,
+  GeneralRequestQuery,
+  McpToolDefinition,
+  OpenAITool,
+};
