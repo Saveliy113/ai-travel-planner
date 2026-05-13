@@ -7,6 +7,7 @@ import { Server } from 'http';
 import Routes from '../interfaces/routes.interface';
 import errorMiddleware from '../middlewares/error.middleware';
 import { logger, stream } from '../utils/logger';
+import './mcpClient';
 
 class App {
   public app: Application;

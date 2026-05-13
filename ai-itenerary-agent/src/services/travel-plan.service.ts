@@ -8,13 +8,13 @@ class TravelPlanService {
     try {
       logger.info(`[TravelPlanService] generate (stub) destination="${body.destination}"`);
 
-      logger.info(`[TravelPlanService] Searching lat and lon via Geocoding API`);
       const targetLocation = body.destination.split(',').at(-1)?.trim();
       logger.info(`[TravelPlanService] Target Location: ${targetLocation}`);
       if (!targetLocation) {
         throw new Error('Error defining target location');
       }
-
+      
+      logger.info(`[TravelPlanService] Searching lat and lon via Geocoding API`);
       const {
         data: {
           results: [targetLocationData],
@@ -31,6 +31,7 @@ class TravelPlanService {
         `[TravelPlanService] Location: ${body.destination}; Latitude: ${targetLocationData.latitude}; Longitude: ${targetLocationData.longitude}`,
       );
 
+      //TODO: Implement weather agent call via MCP
       logger.info(
         `[TravelPlanService] Getting weather information via Weather Agent by lat=${targetLocationData.latitude} and lon=${targetLocationData.longitude}`,
       );
