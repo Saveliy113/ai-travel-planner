@@ -1,98 +1,56 @@
 import { Type } from 'class-transformer';
 import {
+  ArrayMinSize,
   IsArray,
   IsNotEmpty,
-  IsNumber,
   IsOptional,
   IsString,
   ValidateNested,
 } from 'class-validator';
 
-class TravelPlanClarificationOptionDto {
-  @IsString()
-  name!: string;
-
-  @IsString()
-  description!: string;
-}
-
-class TravelPlanInterestCategoryDto {
-  @IsString()
+class TravelPlanInterestDto {
+  @IsString({ message: 'each interest.label must be a string' })
+  @IsNotEmpty({ message: 'each interest.label is required' })
   label!: string;
 
-  @IsString()
-  searchQuery!: string;
+  @IsString({ message: 'each interest.type must be a string' })
+  @IsNotEmpty({ message: 'each interest.type is required' })
+  type!: string;
 
-  @IsString()
+  @IsString({ message: 'each interest.google_places_query must be a string' })
+  @IsNotEmpty({ message: 'each interest.google_places_query is required' })
+  google_places_query!: string;
+
+  @IsString({ message: 'each interest.description must be a string' })
+  @IsNotEmpty({ message: 'each interest.description is required' })
   description!: string;
 }
 
 class TravelPlanGenerateDto {
-  @IsOptional()
-  @IsNumber()
-  step?: number;
-
   @IsString({ message: 'destination must be a string' })
   @IsNotEmpty({ message: 'destination is required' })
   destination!: string;
 
-  @IsOptional()
-  @IsString()
-  locationType?: string;
+  @IsString({ message: 'startDate must be a string' })
+  @IsNotEmpty({ message: 'startDate is required' })
+  startDate!: string;
 
-  @IsOptional()
-  @IsString()
-  firstStepPhase?: string;
+  @IsString({ message: 'endDate must be a string' })
+  @IsNotEmpty({ message: 'endDate is required' })
+  endDate!: string;
 
-  @IsOptional()
-  @IsString()
-  clarificationReason?: string;
+  @IsString({ message: 'budget must be a string' })
+  @IsNotEmpty({ message: 'budget is required' })
+  budget!: string;
 
-  @IsOptional()
-  @IsArray()
+  @IsArray({ message: 'interests must be an array' })
+  @ArrayMinSize(1, { message: 'interests must contain at least one item' })
   @ValidateNested({ each: true })
-  @Type(() => TravelPlanClarificationOptionDto)
-  clarificationOptions?: TravelPlanClarificationOptionDto[];
+  @Type(() => TravelPlanInterestDto)
+  interests!: TravelPlanInterestDto[];
 
   @IsOptional()
-  @IsString()
-  selectedClarification?: string;
-
-  @IsOptional()
-  @IsString()
-  selectedClarificationDescription?: string;
-
-  @IsOptional()
-  @IsString()
-  startDate?: string;
-
-  @IsOptional()
-  @IsString()
-  endDate?: string;
-
-  @IsOptional()
-  @IsString()
-  budget?: string;
-
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => TravelPlanInterestCategoryDto)
-  interestCategories?: TravelPlanInterestCategoryDto[];
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  selectedInterestLabels?: string[];
-
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => TravelPlanInterestCategoryDto)
-  selectedInterests?: TravelPlanInterestCategoryDto[];
-
-  @IsOptional()
-  @IsString()
+  @IsString({ message: 'additionalPreferences must be a string when present' })
   additionalPreferences?: string;
 }
 
