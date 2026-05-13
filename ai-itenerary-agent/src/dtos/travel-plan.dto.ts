@@ -8,7 +8,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 
-class TravelSetupClarificationOptionDto {
+class TravelPlanClarificationOptionDto {
   @IsString()
   name!: string;
 
@@ -16,7 +16,7 @@ class TravelSetupClarificationOptionDto {
   description!: string;
 }
 
-class TravelSetupInterestCategoryDto {
+class TravelPlanInterestCategoryDto {
   @IsString()
   label!: string;
 
@@ -27,7 +27,7 @@ class TravelSetupInterestCategoryDto {
   description!: string;
 }
 
-class TravelSetupGenerateDto {
+class TravelPlanGenerateDto {
   @IsOptional()
   @IsNumber()
   step?: number;
@@ -51,8 +51,8 @@ class TravelSetupGenerateDto {
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => TravelSetupClarificationOptionDto)
-  clarificationOptions?: TravelSetupClarificationOptionDto[];
+  @Type(() => TravelPlanClarificationOptionDto)
+  clarificationOptions?: TravelPlanClarificationOptionDto[];
 
   @IsOptional()
   @IsString()
@@ -77,8 +77,8 @@ class TravelSetupGenerateDto {
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => TravelSetupInterestCategoryDto)
-  interestCategories?: TravelSetupInterestCategoryDto[];
+  @Type(() => TravelPlanInterestCategoryDto)
+  interestCategories?: TravelPlanInterestCategoryDto[];
 
   @IsOptional()
   @IsArray()
@@ -88,12 +88,12 @@ class TravelSetupGenerateDto {
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => TravelSetupInterestCategoryDto)
-  selectedInterests?: TravelSetupInterestCategoryDto[];
+  @Type(() => TravelPlanInterestCategoryDto)
+  selectedInterests?: TravelPlanInterestCategoryDto[];
 
   @IsOptional()
   @IsString()
   additionalPreferences?: string;
 }
 
-export { TravelSetupGenerateDto };
+export { TravelPlanGenerateDto };
