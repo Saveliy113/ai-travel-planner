@@ -4,9 +4,9 @@ dotenv.config();
 
 import App from './loaders/app';
 import { logger } from './utils/logger';
-import { AliveRoutes, McpRoutes } from './routes/index';
+import { TravelPlanRoutes } from './routes/index';
 
-const app = new App([new AliveRoutes(), new McpRoutes()]);
+const app = new App([new TravelPlanRoutes()]);
 
 ((): void => {
   try {

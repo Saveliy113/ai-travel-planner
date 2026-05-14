@@ -1,3 +1,1 @@
-import { ForecastQueryDto } from './forecast.dto';
-
-export { ForecastQueryDto };
+export { forecastQuerySchema, type ForecastQueryDto } from './forecast.dto';

@@ -1,8 +1,7 @@
 import axios from 'axios';
-import { plainToInstance } from 'class-transformer';
 import moment from 'moment';
 
-import { ForecastQueryDto } from '../dtos/forecast.dto';
+import { forecastQuerySchema, type ForecastQueryDto } from '../dtos/forecast.dto';
 import type { ForecastMode, ForecastResponse, ForecastResult, OpenMeteoForecastResponse } from '../interfaces/open-meteo-forecast.interface';
 
 import { logger } from '../utils/logger';
@@ -86,9 +85,13 @@ class ForecastService {
     }
   }
   
-  public async getForecasts(query: Record<string, unknown>): Promise<ForecastResult> {
+  public async getForecasts(query: unknown): Promise<ForecastResult> {
     try {
-      const dto = plainToInstance(ForecastQueryDto, query);
+      const parsed = forecastQuerySchema.safeParse(query);
+      if (!parsed.success) {
+        throw new Error(parsed.error.message);
+      }
+      const dto = parsed.data;
       logger.debug(
         `[ForecastService] getForecasts: Getting forecasts for location lat=${dto.lat} lon=${dto.lon}`,
       );

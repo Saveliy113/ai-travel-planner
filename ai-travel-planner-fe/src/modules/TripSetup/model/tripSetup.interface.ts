@@ -42,7 +42,7 @@ export interface DestinationInterestsResponse {
   categories: TravelInterestCategory[]
 }
 
-/** Payload for `POST /travel-setup/generate` (matches TripSetup wizard summary). */
+/** Payload for `POST /travel-plan/generate` (matches TripSetup wizard summary). */
 export interface TripSetupPlanPayload {
   destination: string
   startDate: string
@@ -52,7 +52,7 @@ export interface TripSetupPlanPayload {
   additionalPreferences: string
 }
 
-/** Response from travel planner backend `/travel-setup/generate` (stub until real plan data). */
+/** Response from itinerary agent `POST /travel-plan/generate` (stub until real plan data). */
 export interface TravelSetupGenerateResult {
   ok: boolean
   message?: string

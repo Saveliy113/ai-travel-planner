@@ -1,4 +1,4 @@
-import { locationAgentApi, travelPlannerApi } from "@/app/api/client"
+import { itineraryAgentApi, locationAgentApi } from "@/app/api/client"
 import type {
   DestinationInterestsResponse,
   TripSetupPlanPayload,
@@ -19,15 +19,15 @@ export async function fetchDestinationInterests(
 }
 
 /**
- * Creates a travel plan via travel-planner-be `POST /travel-setup/generate`.
+ * Creates a travel plan via itinerary agent `POST /travel-plan/generate`.
  * Maps `interests` to `selectedInterests` for the backend DTO.
  */
 export async function generateTravelSetupPlan(
   payload: TripSetupPlanPayload
 ): Promise<TravelSetupGenerateResult> {
   try {
-    const { data } = await travelPlannerApi.post<TravelSetupGenerateResult>(
-      "/travel-setup/generate",
+    const { data } = await itineraryAgentApi.post<TravelSetupGenerateResult>(
+      "/travel-plan/generate",
       payload
     )
 

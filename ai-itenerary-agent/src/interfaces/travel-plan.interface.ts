@@ -1,35 +1,35 @@
-export interface TravelSetupClarificationOption {
+export interface TravelPlanClarificationOption {
   name: string;
   description: string;
 }
 
-export interface TravelSetupInterestCategory {
+export interface TravelPlanInterestCategory {
   label: string;
   searchQuery: string;
   description: string;
 }
 
 /** Body shape aligned with the TripSetup wizard payload (frontend). */
-export interface TravelSetupGenerateBody {
+export interface TravelPlanGenerateBody {
   step?: number;
   destination: string;
   locationType?: string;
   firstStepPhase?: string;
   clarificationReason?: string;
-  clarificationOptions?: TravelSetupClarificationOption[];
+  clarificationOptions?: TravelPlanClarificationOption[];
   selectedClarification?: string;
   selectedClarificationDescription?: string;
   startDate?: string;
   endDate?: string;
   budget?: string;
-  interestCategories?: TravelSetupInterestCategory[];
+  interestCategories?: TravelPlanInterestCategory[];
   selectedInterestLabels?: string[];
-  selectedInterests?: TravelSetupInterestCategory[];
+  selectedInterests?: TravelPlanInterestCategory[];
   additionalPreferences?: string;
 }
 
 /** Extend when the generate flow returns real data. */
-export interface TravelSetupGenerateResult {
+export interface TravelPlanGenerateResult {
   ok: boolean;
   message?: string;
 }
