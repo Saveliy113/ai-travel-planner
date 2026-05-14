@@ -2,6 +2,8 @@ import 'reflect-metadata';
 import dotenv from 'dotenv';
 dotenv.config();
 
+import './loaders/mcpClient';
+
 import App from './loaders/app';
 import { logger } from './utils/logger';
 import { AliveRoutes, LocationRoutes, McpRoutes } from './routes/index';

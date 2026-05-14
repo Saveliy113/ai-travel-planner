@@ -1,9 +1,9 @@
+import type { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 
 import { registerMcpTools } from '../tools/tools';
 
-const transports = new Map<string, SSEServerTransport>();
+const streamableTransports = new Map<string, StreamableHTTPServerTransport>();
 
 const server = new McpServer({
   name: 'location-service',
@@ -12,4 +12,4 @@ const server = new McpServer({
 
 registerMcpTools(server);
 
-export { server, transports };
+export { server, streamableTransports };

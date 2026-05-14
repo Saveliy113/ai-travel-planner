@@ -1,61 +1,92 @@
+import { randomUUID } from 'node:crypto';
+
 import { Request, Response, Router } from 'express';
-import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
+import { InMemoryEventStore } from '@modelcontextprotocol/sdk/examples/shared/inMemoryEventStore.js';
 
 import Route from '../interfaces/routes.interface';
-import { server, transports } from '../loaders/mcp';
+import { server, streamableTransports } from '../loaders/mcp';
 import { logger } from '../utils/logger';
 
+function mcpSessionHeader(req: Request): string | undefined {
+  const raw = req.headers['mcp-session-id'];
+  if (Array.isArray(raw)) {
+    return raw[0];
+  }
+  return raw;
+}
+
 class McpRoutes implements Route {
-  /** Paths are relative to API mount; full URLs: `{apiBase}/mcp/sse`, `{apiBase}/mcp/messages`. */
+  /** Streamable HTTP MCP: `{apiBase}/mcp` (GET/POST/DELETE). */
   public path = '/mcp';
   public router = Router();
 
   constructor() {
-    const apiBase = `/api/${process.env.API_VERSION ?? 'v1'}`;
-    const messagesPath = `${apiBase}${this.path}/messages`;
-    this.initializeRoutes(messagesPath);
+    this.initializeRoutes();
   }
 
-  private initializeRoutes(messagesPath: string): void {
-    this.router.get(`${this.path}/sse`, async (req: Request, res: Response) => {
-      const transport = new SSEServerTransport(messagesPath, res);
-
+  private initializeRoutes(): void {
+    this.router.all(this.path, async (req: Request, res: Response) => {
       try {
-        await server.connect(transport);
-      } catch (err) {
-        logger.error(`[MCP] connect failed: ${err instanceof Error ? err.message : err}`);
-        if (!res.headersSent) {
-          res.status(500).end('MCP connection failed');
+        const sessionId = mcpSessionHeader(req);
+        let transport: StreamableHTTPServerTransport | undefined;
+
+        if (sessionId) {
+          transport = streamableTransports.get(sessionId);
+          if (!transport) {
+            res.status(404).json({
+              jsonrpc: '2.0',
+              error: {
+                code: -32_000,
+                message: 'Not Found: unknown MCP session',
+              },
+              id: null,
+            });
+            return;
+          }
+        } else if (req.method === 'POST' && isInitializeRequest(req.body)) {
+          const eventStore = new InMemoryEventStore();
+          transport = new StreamableHTTPServerTransport({
+            sessionIdGenerator: () => randomUUID(),
+            eventStore,
+            onsessioninitialized: (sid) => {
+              streamableTransports.set(sid, transport!);
+              logger.info(`[MCP] Streamable HTTP session: ${sid}`);
+            },
+          });
+          transport.onclose = () => {
+            const sid = transport?.sessionId;
+            if (sid && streamableTransports.has(sid)) {
+              streamableTransports.delete(sid);
+              logger.info(`[MCP] Streamable HTTP session closed: ${sid}`);
+            }
+          };
+          await server.connect(transport);
+        } else {
+          res.status(400).json({
+            jsonrpc: '2.0',
+            error: {
+              code: -32_000,
+              message: 'Bad Request: invalid MCP session or missing initialize',
+            },
+            id: null,
+          });
+          return;
         }
-        return;
-      }
 
-      const sessionId = transport.sessionId;
-      transports.set(sessionId, transport);
-      logger.info(`[MCP] Session started: ${sessionId}`);
-
-      res.on('close', () => {
-        transports.delete(sessionId);
-        void transport.close().catch(() => undefined);
-        logger.info(`[MCP] Session closed: ${sessionId}`);
-      });
-    });
-
-    this.router.post(`${this.path}/messages`, async (req: Request, res: Response) => {
-      const sessionId = typeof req.query.sessionId === 'string' ? req.query.sessionId : undefined;
-      const transport = sessionId ? transports.get(sessionId) : undefined;
-
-      if (!transport) {
-        res.status(404).send('Session not found');
-        return;
-      }
-
-      try {
-        await transport.handlePostMessage(req, res, req.body);
+        await transport.handleRequest(req, res, req.body);
       } catch (err) {
-        logger.error(`[MCP] handlePostMessage: ${err instanceof Error ? err.message : err}`);
+        logger.error(`[MCP] Streamable HTTP error: ${err instanceof Error ? err.message : err}`);
         if (!res.headersSent) {
-          res.status(500).end('Failed to process MCP message');
+          res.status(500).json({
+            jsonrpc: '2.0',
+            error: {
+              code: -32_603,
+              message: 'Internal server error',
+            },
+            id: null,
+          });
         }
       }
     });
