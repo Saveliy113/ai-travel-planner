@@ -7,7 +7,7 @@ function registerMcpTools(server: McpServer): void {
   const locationService = new LocationService();
 
   server.registerTool(
-    'get_location',
+    'get_poi',
     {
       description:
         'Find points of interest near coordinates using Google Places: expands categories via LLM, then returns ranked places per category for the given destination and lat/lon.',
