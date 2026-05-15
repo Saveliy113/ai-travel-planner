@@ -60,8 +60,15 @@ class TravelPlanService {
               },
             ],
           });
-          const categories = JSON.parse(completion.choices[0].message.content || '[]');
-          console.log('CATEGORIES DATA: ', categories);
+          const data = JSON.parse(completion.choices[0].message.content || '[]');
+          params.arguments = {categories: data.categories.map((category: { searchQuery: string; count: number }) => ({
+            searchQuery: category.searchQuery,
+            count: category.count,
+          })),
+        };
+  
+        console.log('CATEGORIES DATA: ', params.arguments);
+
 
           raw = await locationAgentClient.callTool(params);
           break;

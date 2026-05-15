@@ -15,10 +15,10 @@ function registerMcpTools(server: McpServer): void {
     },
     async (args) => {
       const data = await locationService.getLocation({
-        destination: args.destination,
-        lat: args.lat,
-        lon: args.lon,
-        categories: args.categories,
+        categories: args.categories.map((category) => ({
+          searchQuery: category.searchQuery,
+          count: category.count,
+        })),
       });
 
       return {

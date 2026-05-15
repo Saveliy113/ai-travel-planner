@@ -10,6 +10,7 @@ import {
   GooglePlacesPoiResponse,
   LocationCategoryResult,
 } from '../interfaces/location.interface';
+import { googleMapsMcpClient } from '../loaders/mcpClient';
 
 /** Default search radius (m) when categories are supplied without LLM-expanded radii. */
 const DEFAULT_NEARBY_RADIUS_METERS = 5000;
@@ -43,20 +44,16 @@ class LocationService {
     });
   }
 
-  private async getGooglePlacesData( { lat, lon, radius, searchType, name }: GetGooglePlacesQueryBind): Promise<GooglePlacesPoiResponse[]> {
+  private async getGooglePlacesData(searchQuery: string): Promise<GooglePlacesPoiResponse[]> {
     try {
-      const searchPath = ['type', 'keyword'].includes(searchType) ? 'nearbysearch' : 'textsearch';
-      const { data } = await axios.get(`${process.env.GOOGLE_PLACES_API_URL}/${searchPath}/json`, {
-        params: {
-          ...(searchType !== 'textsearch' ? { location: `${lat},${lon}` } : {}),
-          ...(searchType !== 'textsearch' ? { radius } : {}),
-          key: process.env.GOOGLE_PLACES_API_KEY,
-          ...(searchType === 'type' ? { type: name } : {}),
-          ...(searchType === 'keyword' ? { keyword: name } : {}),
-          ...(searchType === 'textsearch' ? { query: name } : {}),
+      const data = await googleMapsMcpClient.callTool({
+        name: 'maps_search_places',
+        arguments: {
+          query: searchQuery,
         },
       });
 
+      console.log('DATA: ', data);
       return data.results.map((result: GooglePlacesPoiItem) => ({
         name: result.name,
         businessStatus: result.business_status,
@@ -77,18 +74,12 @@ class LocationService {
 
   public async getLocation(body: LocationBodyDto): Promise<{ places: LocationCategoryResult[] }> {
     try {
-      const { lat, lon, categories } = body;
+      const { categories } = body;
 
       const places: LocationCategoryResult[] = [];
 
       for (const category of categories) {
-        const googlePlacesData = await this.getGooglePlacesData({
-          lat,
-          lon,
-          radius: DEFAULT_NEARBY_RADIUS_METERS,
-          searchType: 'keyword',
-          name: category.name,
-        });
+        const googlePlacesData = await this.getGooglePlacesData(category.searchQuery);
 
         this.sortPlacesByRatingAndReviews(googlePlacesData);
         places.push({

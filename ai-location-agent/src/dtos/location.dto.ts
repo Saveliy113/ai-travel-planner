@@ -1,8 +1,6 @@
 import { Type } from 'class-transformer';
 import {
   IsArray,
-  IsLatitude,
-  IsLongitude,
   IsNotEmpty,
   IsNumber,
   IsString,
@@ -13,7 +11,7 @@ import {
 class LocationCategoryItemDto {
   @IsString({ message: 'category name must be a string' })
   @IsNotEmpty({ message: 'category name is required' })
-  name!: string;
+  searchQuery!: string;
 
   @Type(() => Number)
   @IsNumber({}, { message: 'category count must be a number' })
@@ -22,23 +20,6 @@ class LocationCategoryItemDto {
 }
 
 class LocationBodyDto {
-  @IsString({ message: 'destination must be a string' })
-  @IsNotEmpty({ message: 'destination is required' })
-  destination!: string;
-
-  @Type(() => Number)
-  @IsNumber({}, { message: 'lat must be a number' })
-  @IsLatitude({ message: 'lat must be a valid latitude' })
-  @IsNotEmpty({ message: 'lat is required' })
-  lat!: number;
-
-  @Type(() => Number)
-  @IsNumber({}, { message: 'lon must be a number' })
-  @IsLongitude({ message: 'lon must be a valid longitude' })
-  @IsNotEmpty({ message: 'lon is required' })
-  lon!: number;
-
-
   @IsArray({ message: 'categories must be an array' })
   @ValidateNested({ each: true, message: 'each category must be a valid object: { name: string, count: number }' })
   @Type(() => LocationCategoryItemDto)
