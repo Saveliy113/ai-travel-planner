@@ -3,14 +3,16 @@ import { LocationBodyDto, LocationInterestsBodyDto } from '../dtos/location.dto'
 import { logger } from '../utils/logger';
 
 import { openai } from '../loaders/openai';
-import { QUERY_EXPANDER_PROMPT, TRAVEL_INTERESTS_SYSTEM_PROMPT } from '../prompt/prompt';
+import { TRAVEL_INTERESTS_SYSTEM_PROMPT } from '../prompt/prompt';
 import {
-  CategoryQuery,
   GetGooglePlacesQueryBind,
   GooglePlacesPoiItem,
   GooglePlacesPoiResponse,
   LocationCategoryResult,
 } from '../interfaces/location.interface';
+
+/** Default search radius (m) when categories are supplied without LLM-expanded radii. */
+const DEFAULT_NEARBY_RADIUS_METERS = 5000;
 
 class LocationService {
   private llmModel = process.env.OPENAI_MODEL || 'gpt-5-mini-2025-08-07';
@@ -75,35 +77,16 @@ class LocationService {
 
   public async getLocation(body: LocationBodyDto): Promise<{ places: LocationCategoryResult[] }> {
     try {
-      const { lat, lon, destination, categories } = body;
+      const { lat, lon, categories } = body;
 
-      // Building query for categories with OpenAI API
-      const query = await openai.chat.completions.create({
-        model: this.llmModel,
-        messages: [
-          {
-            role: 'system',
-            content: QUERY_EXPANDER_PROMPT,
-          },
-          {
-            role: 'user',
-            content: JSON.stringify({
-              destination: destination,
-              categories,
-            }),
-          },
-        ],
-      });
+      const places: LocationCategoryResult[] = [];
 
-      // Requesting data from google places api — parse query.choices[0].message.content (JSON array with radiusMeters per category)
-      let categoriesQuery: CategoryQuery[] = JSON.parse(query.choices[0].message.content || '[]') as CategoryQuery[];
-      let places: LocationCategoryResult[] = [];
-      for (const category of categoriesQuery) {
+      for (const category of categories) {
         const googlePlacesData = await this.getGooglePlacesData({
           lat,
           lon,
-          radius: category.radiusMeters,
-          searchType: category.mode,
+          radius: DEFAULT_NEARBY_RADIUS_METERS,
+          searchType: 'keyword',
           name: category.name,
         });
 

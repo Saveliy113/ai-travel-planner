@@ -501,8 +501,8 @@ Return JSON only:
   "categories": [
     {
       "label": "Top Beaches",
-      "searchable_query": "top visited beaches in Phuket",
-      "retrieval_count": 8,
+      "searchQuery": "top visited beaches in Phuket",
+      "count": 8,
       "reasoning": "Phuket is highly beach-oriented and beaches are core destination POIs."
     }
   ]

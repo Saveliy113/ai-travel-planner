@@ -10,7 +10,7 @@ function registerMcpTools(server: McpServer): void {
     'get_poi',
     {
       description:
-        'Find points of interest near coordinates using Google Places: expands categories via LLM, then returns ranked places per category for the given destination and lat/lon.',
+        'Fetch POIs near lat/lon via Google Places. Pass planner-built `categories` only (name + count per category); the itinerary agent maps user interests to this list.',
       inputSchema: locationMcpToolInputSchema,
     },
     async (args) => {

@@ -5,10 +5,11 @@ import type { TravelPlanGenerateBody, TravelPlanGenerateResult } from '../interf
 import type { McpToolDefinition, OpenAITool } from '../interfaces/general.interface';
 import { logger } from '../utils/logger';
 import { weatherAgentClient, locationAgentClient } from '../loaders/mcpClient';
-import { TRAVEL_PLAN_GENERATE_PROMPT } from '../prompt/prompt';
+import { EXTRACT_POI_CATEGORIES_PROMPT, TRAVEL_PLAN_GENERATE_PROMPT } from '../prompt/prompt';
 import { openai } from '../loaders/openai';
 import { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import { CallToolResultSchema, type CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import moment from 'moment';
 
 class TravelPlanService {
   private llmModel = process.env.OPENAI_MODEL || 'gpt-5-mini-2025-08-07';
@@ -41,6 +42,27 @@ class TravelPlanService {
           raw = await weatherAgentClient.callTool(params);
           break;
         case 'get_poi':
+          // Getting detailed categories for the destination and interests
+          console.log(args);
+          const completion = await openai.chat.completions.create({
+            model: this.llmModel,
+            messages: [
+              {
+                role: 'system',
+                content: EXTRACT_POI_CATEGORIES_PROMPT,
+              },
+              {
+                role: 'user',
+                content: JSON.stringify({
+                  destination: args.destination,
+                  interests: args.interests,
+                }),
+              },
+            ],
+          });
+          const categories = JSON.parse(completion.choices[0].message.content || '[]');
+          console.log('CATEGORIES DATA: ', categories);
+
           raw = await locationAgentClient.callTool(params);
           break;
         default:
@@ -70,7 +92,11 @@ class TravelPlanService {
       if (!targetLocation) {
         throw new Error('Error defining target location');
       }
-      
+
+      // Defining travel duration
+      const travelDurationDays = moment(body.endDate).diff(moment(body.startDate), 'days');
+      logger.info(`[TravelPlanService] Travel Duration: ${travelDurationDays} days`);
+    
       logger.info(`[TravelPlanService] Searching lat and lon via Geocoding API`);
       const {
         data: {
@@ -136,9 +162,15 @@ class TravelPlanService {
           const functionName = toolCall.function.name;
           const args = JSON.parse(toolCall.function.arguments);
 
-          // Calling MCP tool
+          // Calling MCP tool (arguments come from the model; must match MCP tool schemas)
           logger.info(`[TravelPlanService] Calling MCP tool: ${functionName}`);
-          const result = await this.callTool(functionName, args);
+          const result = await this.callTool(functionName, functionName === 'get_forecast' ? args : {
+            destination: body.destination,
+            clarification: targetLocation,
+            travelDurationDays: travelDurationDays,
+            interests: body.interests,
+            additionalPreferences: body.additionalPreferences,
+          });
           logger.info(`[TravelPlanService] MCP tool result: ${JSON.stringify(result)}`);
 
           messages.push({

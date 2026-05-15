@@ -1,30 +1,18 @@
-export interface TravelPlanClarificationOption {
-  name: string;
-  description: string;
-}
-
-export interface TravelPlanInterestCategory {
+/** One interest row from Trip / travel-setup (matches backend JSON). */
+export interface TravelPlanInterest {
   label: string;
-  searchQuery: string;
+  type: string;
+  google_places_query: string;
   description: string;
 }
 
-/** Body shape aligned with the TripSetup wizard payload (frontend). */
+/** POST /travel-plan/generate body — same shape as travel-planner-be TripSetup final payload. */
 export interface TravelPlanGenerateBody {
-  step?: number;
   destination: string;
-  locationType?: string;
-  firstStepPhase?: string;
-  clarificationReason?: string;
-  clarificationOptions?: TravelPlanClarificationOption[];
-  selectedClarification?: string;
-  selectedClarificationDescription?: string;
-  startDate?: string;
-  endDate?: string;
-  budget?: string;
-  interestCategories?: TravelPlanInterestCategory[];
-  selectedInterestLabels?: string[];
-  selectedInterests?: TravelPlanInterestCategory[];
+  startDate: string;
+  endDate: string;
+  budget: string;
+  interests: TravelPlanInterest[];
   additionalPreferences?: string;
 }
 

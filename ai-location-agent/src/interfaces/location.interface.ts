@@ -54,19 +54,22 @@ export interface LocationCategoryResult {
   items: GooglePlacesPoiResponse[];
 }
 
-/** MCP tool `get_location` arguments (Zod raw shape for McpServer.registerTool). */
+/** MCP tool `get_poi`: geo context from caller; `categories` are pre-built by the itinerary agent (name + count per category). */
 const locationMcpToolInputSchema = {
-  destination: z.string().describe('Destination label / area name for place search context'),
+  destination: z.string().describe('Destination label for logging / context'),
   lat: z.number().describe('Latitude (WGS84)'),
   lon: z.number().describe('Longitude (WGS84)'),
   categories: z
     .array(
       z.object({
-        name: z.string().describe('Category or place type to search (e.g. museums, cafes)'),
-        count: z.number().int().min(1).describe('Max number of POIs to return for this category'),
+        name: z
+          .string()
+          .describe('Google Places keyword or type string (e.g. restaurant, beach), from planner'),
+        count: z.number().int().min(1).describe('Max POIs to return for this row'),
       }),
     )
-    .describe('Search categories with per-category result limits'),
+    .min(1)
+    .describe('Planner-generated category rows only — not raw trip `interests` objects'),
 };
 
 export { locationMcpToolInputSchema };
