@@ -37,7 +37,7 @@ class LocationService {
 
   private async getGooglePlacesData(searchQuery: string): Promise<GooglePlacesPoiResponse[]> {
     try {
-      // Getting places from Google Maps
+      logger.info('[POI] step · Google search');
       const raw = await googleMapsMcpClient.callTool({
         name: 'maps_search_places',
         arguments: {
@@ -45,30 +45,38 @@ class LocationService {
         },
       });
       const data = this.parseMapsSearchPlacesMcpResult<GoogleMapsSearchPlacesPayload>(raw as { content: Array<{ type: string; text?: string }> });
-      
-      // Enriching places with detailed data
-      const response = await Promise.all(data.places.map(async (result) => {
-        const detailedRaw = await googleMapsMcpClient.callTool({
-          name: 'maps_place_details',
-          arguments: {
-            place_id: result.place_id,
-          },
-        });
-        const detailedData = this.parseMapsSearchPlacesMcpResult<GoogleMapsPlaceDetailsPayload>(detailedRaw as { content: Array<{ type: string; text?: string }> });
+      const rows = data.places ?? [];
 
-        return {
-          name: result.name,
-          placeId: result.place_id,
-          formattedAddress: result.formatted_address,
-          rating: result.rating,
-          reviews: (detailedData.reviews || []).map(review => ({
-            text: review.text,
-            time: review.time,
-          })),
-          types: result.types,
-          workingHours: detailedData.opening_hours?.weekday_text || [],
-        };
-      }));
+      if (rows.length === 0) {
+        logger.warn('[POI] step · Google search · no results');
+        return [];
+      }
+
+      logger.info('[POI] step · place details');
+      const response = await Promise.all(
+        rows.map(async (result) => {
+          const detailedRaw = await googleMapsMcpClient.callTool({
+            name: 'maps_place_details',
+            arguments: {
+              place_id: result.place_id,
+            },
+          });
+          const detailedData = this.parseMapsSearchPlacesMcpResult<GoogleMapsPlaceDetailsPayload>(detailedRaw as { content: Array<{ type: string; text?: string }> });
+
+          return {
+            name: result.name,
+            placeId: result.place_id,
+            formattedAddress: result.formatted_address,
+            rating: result.rating,
+            reviews: (detailedData.reviews || []).map(review => ({
+              text: review.text,
+              time: review.time,
+            })),
+            types: result.types,
+            workingHours: detailedData.opening_hours?.weekday_text || [],
+          };
+        }),
+      );
 
       return response;
     } catch (error) {
@@ -85,7 +93,9 @@ class LocationService {
 
       const places: LocationCategoryResult[] = [];
 
-      for (const category of categories) {
+      for (let i = 0; i < categories.length; i++) {
+        const category = categories[i];
+        logger.info(`[POI] step · category ${i + 1}/${categories.length}`);
         const googlePlacesData = await this.getGooglePlacesData(category.searchQuery);
 
         places.push({
@@ -95,7 +105,7 @@ class LocationService {
         });
       }
 
-      // Validating places against category name and count via openAI
+      logger.info('[POI] step · LLM validate');
       const completion = await openai.chat.completions.create({
         model: this.llmModel,
         messages: [
@@ -115,7 +125,9 @@ class LocationService {
         throw new Error('Empty response from OpenAI');
       }
 
-      return JSON.parse(content);
+      const result = JSON.parse(content) as { places: LocationPoiResult[] };
+
+      return result;
     } catch (error) {
       logger.error(
         `[LocationService] getLocation: ${error instanceof Error ? error.message : error}`,

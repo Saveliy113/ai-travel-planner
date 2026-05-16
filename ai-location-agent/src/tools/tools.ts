@@ -2,6 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 import { locationMcpToolInputSchema } from '../interfaces/location.interface';
 import LocationService from '../services/location.service';
+import { logger } from '../utils/logger';
 
 function registerMcpTools(server: McpServer): void {
   const locationService = new LocationService();
@@ -14,12 +15,13 @@ function registerMcpTools(server: McpServer): void {
       inputSchema: locationMcpToolInputSchema,
     },
     async (args) => {
-      const data = await locationService.getLocation({
-        categories: args.categories.map((category) => ({
-          searchQuery: category.searchQuery,
-          count: category.count,
-        })),
-      });
+      const categories = args.categories.map((category) => ({
+        searchQuery: category.searchQuery,
+        count: category.count,
+      }));
+      logger.info(`[POI] start · ${categories.length} categories`);
+      const data = await locationService.getLocation({ categories });
+      logger.info('[POI] done');
 
       return {
         content: [{ type: 'text', text: JSON.stringify(data) }],
