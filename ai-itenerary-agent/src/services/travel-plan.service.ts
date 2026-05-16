@@ -39,7 +39,9 @@ class TravelPlanService {
       let raw: unknown;
       switch (toolName) {
         case 'get_forecast':
-          raw = await weatherAgentClient.callTool(params);
+          raw = await weatherAgentClient.callTool(params, undefined, {
+            timeout: 300_000,
+          });
           break;
         case 'get_poi':
           // Getting detailed categories for the destination and interests
@@ -70,7 +72,9 @@ class TravelPlanService {
         console.log('CATEGORIES DATA: ', params.arguments);
 
 
-          raw = await locationAgentClient.callTool(params);
+          raw = await locationAgentClient.callTool(params, undefined, {
+            timeout: 300_000,
+          });
           break;
         default:
           throw new Error(`Unknown tool: ${toolName}`);
