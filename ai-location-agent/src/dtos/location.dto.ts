@@ -3,14 +3,19 @@ import {
   IsArray,
   IsNotEmpty,
   IsNumber,
+  IsOptional,
   IsString,
   Min,
   ValidateNested,
 } from 'class-validator';
 
 class LocationCategoryItemDto {
-  @IsString({ message: 'category name must be a string' })
-  @IsNotEmpty({ message: 'category name is required' })
+  @IsOptional()
+  @IsString({ message: 'category display name must be a string' })
+  name?: string;
+
+  @IsString({ message: 'category searchQuery must be a string' })
+  @IsNotEmpty({ message: 'category searchQuery is required' })
   searchQuery!: string;
 
   @Type(() => Number)

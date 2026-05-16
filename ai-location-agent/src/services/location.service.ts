@@ -1,69 +1,71 @@
-import axios from 'axios';
 import { LocationBodyDto, LocationInterestsBodyDto } from '../dtos/location.dto';
 import { logger } from '../utils/logger';
 
 import { openai } from '../loaders/openai';
 import { TRAVEL_INTERESTS_SYSTEM_PROMPT } from '../prompt/prompt';
 import {
-  GetGooglePlacesQueryBind,
-  GooglePlacesPoiItem,
+  GoogleMapsPlaceDetailsPayload,
+  GoogleMapsSearchPlacesPayload,
   GooglePlacesPoiResponse,
   LocationCategoryResult,
 } from '../interfaces/location.interface';
 import { googleMapsMcpClient } from '../loaders/mcpClient';
 
-/** Default search radius (m) when categories are supplied without LLM-expanded radii. */
-const DEFAULT_NEARBY_RADIUS_METERS = 5000;
-
 class LocationService {
   private llmModel = process.env.OPENAI_MODEL || 'gpt-5-mini-2025-08-07';
 
-  private normalizePoiMetrics(poi: GooglePlacesPoiResponse): { rating: number; reviews: number } {
-    const r = poi.rating;
-    const rating = typeof r === 'number' && Number.isFinite(r) ? Math.max(0, r) : 0;
-    const u = poi.userRatingsTotal;
-    const reviews =
-      typeof u === 'number' && Number.isFinite(u) ? Math.max(0, Math.trunc(u)) : 0;
-    return { rating, reviews };
-  }
+  private parseMapsSearchPlacesMcpResult<T>(data: { content: Array<{ type: string; text?: string }> }): T {
+    try {
+      const text = data.content
+        .filter(b =>
+          b.type === 'text' && typeof b.text === 'string',
+        )
+        .map((b) => b.text)
+        .join('\n');
 
-  /** Composite score: rating × ln(1 + reviews); missing/non-finite values → 0. */
-  private poiCompositeScore(poi: GooglePlacesPoiResponse): number {
-    const { rating, reviews } = this.normalizePoiMetrics(poi);
-    return rating * Math.log1p(reviews);
-  }
+      const parsedData: T = JSON.parse(text);
 
-  private sortPlacesByRatingAndReviews(places: GooglePlacesPoiResponse[]): void {
-    places.sort((a, b) => {
-      const diff = this.poiCompositeScore(b) - this.poiCompositeScore(a);
-      if (diff !== 0) return diff;
-      const { rating: ra, reviews: ua } = this.normalizePoiMetrics(a);
-      const { rating: rb, reviews: ub } = this.normalizePoiMetrics(b);
-      if (rb !== ra) return rb > ra ? 1 : -1;
-      return ub - ua;
-    });
+      return parsedData;
+    } catch (error) {
+      logger.error(
+        `[LocationService] parseMapsSearchPlacesMcpResult: ${error instanceof Error ? error.message : error}`,
+      );
+      throw error;
+    }
   }
 
   private async getGooglePlacesData(searchQuery: string): Promise<GooglePlacesPoiResponse[]> {
     try {
-      const data = await googleMapsMcpClient.callTool({
+      // Getting places from Google Maps
+      const raw = await googleMapsMcpClient.callTool({
         name: 'maps_search_places',
         arguments: {
           query: searchQuery,
         },
       });
+      const data = this.parseMapsSearchPlacesMcpResult<GoogleMapsSearchPlacesPayload>(raw as { content: Array<{ type: string; text?: string }> });
+      
+      // Enriching places with detailed data
+      const response = await Promise.all(data.places.map(async (result) => {
+        const detailedRaw = await googleMapsMcpClient.callTool({
+          name: 'maps_place_details',
+          arguments: {
+            place_id: result.place_id,
+          },
+        });
+        const detailedData = this.parseMapsSearchPlacesMcpResult<GoogleMapsPlaceDetailsPayload>(detailedRaw as { content: Array<{ type: string; text?: string }> });
 
-      console.log('DATA: ', data);
-      return data.results.map((result: GooglePlacesPoiItem) => ({
-        name: result.name,
-        businessStatus: result.business_status,
-        formattedAddress: result.formatted_address,
-        photos: result.photos,
-        placeId: result.place_id,
-        rating: result.rating,
-        types: result.types,
-        userRatingsTotal: result.user_ratings_total,
+        return {
+          name: result.name,
+          placeId: result.place_id,
+          formattedAddress: result.formatted_address,
+          rating: result.rating,
+          types: result.types,
+          workingHours: detailedData.opening_hours?.weekday_text || [],
+        };
       }));
+
+      return response;
     } catch (error) {
       logger.error(
         `[LocationService] getGooglePlacesData: ${error instanceof Error ? error.message : error}`,
@@ -81,14 +83,14 @@ class LocationService {
       for (const category of categories) {
         const googlePlacesData = await this.getGooglePlacesData(category.searchQuery);
 
-        this.sortPlacesByRatingAndReviews(googlePlacesData);
         places.push({
-          name: category.name,
+          name: category.name ?? category.searchQuery,
           count: category.count,
-          items: googlePlacesData.slice(0, category.count),
+          items: googlePlacesData,
         });
       }
 
+      // TODO: validate places against category name and count via openAI
       return { places };
     } catch (error) {
       logger.error(

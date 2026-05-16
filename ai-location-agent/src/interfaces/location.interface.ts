@@ -9,33 +9,23 @@ export interface GetGooglePlacesQueryBind {
   radius: number;
   searchType: GooglePlacesSearchType;
 }
-
-export interface GooglePlacesPhotoItem {
-  height: number;
-  width: number;
-  photo_reference: string;
-}
-
+    
 export interface GooglePlacesPoiItem {
-  business_status: string;
   name: string;
   formatted_address: string;
-  photos: GooglePlacesPhotoItem[];
   place_id: string;
   rating?: number;
   types: string[];
-  user_ratings_total?: number;
+  workingHours: string[];
 }
 
 export interface GooglePlacesPoiResponse {
   name: string;
-  businessStatus: string;
   formattedAddress: string;
-  photos: GooglePlacesPhotoItem[];
   placeId: string;
   rating?: number;
   types: string[];
-  userRatingsTotal?: number;
+  workingHours: string[];
 }
 
 export interface CategoryQuery {
@@ -66,5 +56,15 @@ const locationMcpToolInputSchema = {
       }),
     ).min(1).describe('Planner-generated category rows only — not raw trip `interests` objects'),
 };
+
+export interface GoogleMapsSearchPlacesPayload {
+  places: GooglePlacesPoiItem[];
+}
+
+export interface GoogleMapsPlaceDetailsPayload {
+  opening_hours: {
+    weekday_text: string[];
+  };
+}
 
 export { locationMcpToolInputSchema };
