@@ -26,6 +26,20 @@ export interface GooglePlacesPoiResponse {
   rating?: number;
   types: string[];
   workingHours: string[];
+  reviews: {
+    text: string;
+    time: number;
+  }[];
+}
+
+export interface LocationPoiResult {
+  name: string;
+  formattedAddress: string;
+  placeId: string;
+  rating?: number;
+  types: string[];
+  workingHours: string[];
+  reviewsSummary: string;
 }
 
 export interface CategoryQuery {
@@ -62,6 +76,10 @@ export interface GoogleMapsSearchPlacesPayload {
 }
 
 export interface GoogleMapsPlaceDetailsPayload {
+  reviews: {
+    text: string;
+    time: number;
+  }[];
   opening_hours: {
     weekday_text: string[];
   };

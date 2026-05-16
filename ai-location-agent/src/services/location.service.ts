@@ -2,12 +2,13 @@ import { LocationBodyDto, LocationInterestsBodyDto } from '../dtos/location.dto'
 import { logger } from '../utils/logger';
 
 import { openai } from '../loaders/openai';
-import { TRAVEL_INTERESTS_SYSTEM_PROMPT } from '../prompt/prompt';
+import { TRAVEL_INTERESTS_SYSTEM_PROMPT, VALIDATE_PLACES_SYSTEM_PROMPT } from '../prompt/prompt';
 import {
   GoogleMapsPlaceDetailsPayload,
   GoogleMapsSearchPlacesPayload,
   GooglePlacesPoiResponse,
   LocationCategoryResult,
+  LocationPoiResult,
 } from '../interfaces/location.interface';
 import { googleMapsMcpClient } from '../loaders/mcpClient';
 
@@ -60,6 +61,10 @@ class LocationService {
           placeId: result.place_id,
           formattedAddress: result.formatted_address,
           rating: result.rating,
+          reviews: (detailedData.reviews || []).map(review => ({
+            text: review.text,
+            time: review.time,
+          })),
           types: result.types,
           workingHours: detailedData.opening_hours?.weekday_text || [],
         };
@@ -74,7 +79,7 @@ class LocationService {
     }
   }
 
-  public async getLocation(body: LocationBodyDto): Promise<{ places: LocationCategoryResult[] }> {
+  public async getLocation(body: LocationBodyDto): Promise<{ places: LocationPoiResult[] }> {
     try {
       const { categories } = body;
 
@@ -90,8 +95,27 @@ class LocationService {
         });
       }
 
-      // TODO: validate places against category name and count via openAI
-      return { places };
+      // Validating places against category name and count via openAI
+      const completion = await openai.chat.completions.create({
+        model: this.llmModel,
+        messages: [
+          {
+            role: 'system',
+            content: VALIDATE_PLACES_SYSTEM_PROMPT,
+          },
+          {
+            role: 'user',
+            content: JSON.stringify({ places }),
+          },
+        ],
+      });
+
+      const content = completion.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error('Empty response from OpenAI');
+      }
+
+      return JSON.parse(content);
     } catch (error) {
       logger.error(
         `[LocationService] getLocation: ${error instanceof Error ? error.message : error}`,
