@@ -8,6 +8,7 @@ import Routes from '../interfaces/routes.interface';
 import errorMiddleware from '../middlewares/error.middleware';
 import { logger, stream } from '../utils/logger';
 import './mcpClient';
+import { connectQdrant } from './qdrant';
 
 class App {
   public app: Application;
@@ -23,6 +24,7 @@ class App {
     this.server = null;
     this.baseUrl = `/api/${process.env.API_VERSION}`;
 
+    this.initializeQdrant();
     this.initializeMiddlewares();
     this.initializeRoutes(routes);
     this.initializeErrorHandling();
@@ -69,6 +71,10 @@ class App {
 
   private initializeErrorHandling(): void {
     this.app.use(errorMiddleware);
+  }
+
+  private async initializeQdrant(): Promise<void> {
+    await connectQdrant();
   }
 }
 
