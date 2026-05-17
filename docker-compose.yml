@@ -10,9 +10,86 @@ services:
       - qdrant_data:/qdrant/storage
     healthcheck:
       test: ["CMD-SHELL", "bash -c ':> /dev/tcp/127.0.0.1/6333' || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  ingest:
+    container_name: ingest
+    build:
+      context: ./ingest
+    restart: "no"
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    env_file:
+      - ./ingest/.env.production
+
+  ai-travel-planner-be:
+    container_name: ai-travel-planner-be
+    build:
+      context: ./ai-travel-planner-be
+    depends_on:
+      ingest:
+        condition: service_completed_successfully
+    env_file:
+      - ./ai-travel-planner-be/.env.production
+    ports:
+      - "7016:7016"
+
+  ai-weather-agent:
+    container_name: ai-weather-agent
+    build:
+      context: ./ai-weather-agent
+    depends_on:
+      ingest:
+        condition: service_completed_successfully
+    env_file:
+      - ./ai-weather-agent/.env.production
+    ports:
+      - "7018:7018"
+
+  ai-location-agent:
+    container_name: ai-location-agent
+    build:
+      context: ./ai-location-agent
+    depends_on:
+      ingest:
+        condition: service_completed_successfully
+    env_file:
+      - ./ai-location-agent/.env.production
+    ports:
+      - "7019:7019"
+
+  ai-itenerary-agent:
+    container_name: ai-itenerary-agent
+    build:
+      context: ./ai-itenerary-agent
+    depends_on:
+      ingest:
+        condition: service_completed_successfully
+      ai-weather-agent:
+        condition: service_started
+      ai-location-agent:
+        condition: service_started
+    env_file:
+      - ./ai-itenerary-agent/.env.production
+    ports:
+      - "7020:7020"
+
+  ai-travel-planner-fe:
+    container_name: ai-travel-planner-fe
+    build:
+      context: ./ai-travel-planner-fe
+    depends_on:
+      ai-travel-planner-be:
+        condition: service_started
+      ai-itenerary-agent:
+        condition: service_started
+      ai-location-agent:
+        condition: service_started
+    ports:
+      - "4173:4173"
 
 volumes:
   qdrant_data:
