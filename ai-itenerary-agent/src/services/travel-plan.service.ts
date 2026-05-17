@@ -2,11 +2,11 @@ import axios from 'axios';
 import moment from 'moment';
 import type { FunctionParameters } from 'openai/resources/shared';
 
-import type { TravelPlanGenerateBody, TravelPlanGenerateResult, TravelPattern } from '../interfaces/travel-plan.interface';
+import type { TravelPlanGenerateBody, TravelPlanGenerateResult } from '../interfaces/travel-plan.interface';
 import type { McpToolDefinition, OpenAITool } from '../interfaces/general.interface';
 import { logger } from '../utils/logger';
 import { weatherAgentClient, locationAgentClient } from '../loaders/mcpClient';
-import { EXTRACT_POI_CATEGORIES_PROMPT, TRAVEL_PATTERNS_RETRIEVAL_PROMPT, TRAVEL_PLAN_GENERATE_PROMPT } from '../prompt/prompt';
+import { EXTRACT_POI_CATEGORIES_PROMPT, TRAVEL_PATTERNS_RETRIEVAL_PROMPT, TRAVEL_PATTERNS_RERANK_AGGREGATED_PROMPT, TRAVEL_PLAN_GENERATE_PROMPT } from '../prompt/prompt';
 import { openai } from '../loaders/openai';
 import { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import { CallToolResultSchema, type CallToolResult } from '@modelcontextprotocol/sdk/types.js';
@@ -84,6 +84,30 @@ class TravelPlanService {
     }
   }
 
+  private async rerankPatternsWithLLM(
+    aggregatedProfileText: string,
+    candidates: string[],
+  ): Promise<string[]> {
+    if (candidates.length === 0) return [];
+
+    const rerankResponse = await openai.chat.completions.create({
+      model: this.llmModel,
+      messages: [
+        { role: 'system', content: TRAVEL_PATTERNS_RERANK_AGGREGATED_PROMPT },
+        {
+          role: 'user',
+          content: `[Traveler Preferences Profile]\n${aggregatedProfileText}\n\n[Candidate patterns]\n${JSON.stringify(candidates, null, 2)}`,
+        },
+      ],
+      response_format: { type: 'json_object' },
+    });
+
+    const content = rerankResponse.choices[0]?.message?.content;
+    if (!content) return [];
+
+    const parsed = JSON.parse(content) as { selected_patterns?: string[] };
+    return Array.isArray(parsed.selected_patterns) ? parsed.selected_patterns : [];
+  }
 
   private async getOpenaiEmbedding(text: string): Promise<number[]> {
     try {
@@ -137,7 +161,7 @@ class TravelPlanService {
         `[TravelPlanService] Location: ${body.destination}; Latitude: ${targetLocationData.latitude}; Longitude: ${targetLocationData.longitude}`,
       );
 
-      // Generating search queries for travel patterns
+      // Generating retrieval query list, then one aggregated pseudo-profile embedding + Qdrant top-20 + LLM rerank
       logger.info(`[TravelPlanService] Generating search queries for travel patterns`);
       const searchQueries = await openai.chat.completions.create({
         model: this.llmModel,
@@ -148,27 +172,40 @@ class TravelPlanService {
       });
 
       const searchQueriesData = JSON.parse(searchQueries.choices[0].message.content || '[]');
-      logger.info(`[TravelPlanService] Search Queries: ${JSON.stringify(searchQueriesData)}`);
+      logger.info(`[TravelPlanService] Search queries count: ${searchQueriesData.queries.length}`);
 
-      // Retrieving travel patterns from qdrant
-      logger.info(`[TravelPlanService] Retrieving travel patterns from qdrant`);
-      let relevantTravelPatterns: string[] = [];
-      for (const query of searchQueriesData.queries) {
-        const embedding = await this.getOpenaiEmbedding(query);
-        const results = await qdrantClient.search('travel_patterns', {
+      let aggregatedProfileText = '';
+      let finalPatterns: string[] = [];
+
+      if (searchQueriesData.queries.length > 0) {
+        // Joining search queries into a single travel profile
+        aggregatedProfileText = `Traveler Preferences Profile:\n${searchQueriesData.queries.map((q: string) => `- ${q}`).join('\n')}`;
+
+        const embedding = await this.getOpenaiEmbedding(aggregatedProfileText);
+
+        logger.info(`[TravelPlanService] Searcing travel patterns in Qdrant`);
+        const rawResults = await qdrantClient.search('travel_patterns', {
           vector: embedding,
           with_payload: true,
-          score_threshold: 0.7,
-          limit: 1,
+          score_threshold: 0.5,
+          limit: 50,
         });
 
-        for (const point of results) {
-          if (point.payload && typeof point.payload.embedding_text === 'string') {
-            relevantTravelPatterns.push(point.payload.embedding_text);
-          }
-        }
+        const candidates: string[] = rawResults
+        .map((payload: Record<string, unknown>) => String((payload as { embedding_text?: string })?.embedding_text || '').trim())
+        .filter((s: string) => s.length > 0);
+
+        logger.info(`[TravelPlanService] Candidate patterns before rerank: ${candidates.length}`);
+
+        finalPatterns =
+          candidates.length > 0
+            ? await this.rerankPatternsWithLLM(aggregatedProfileText, candidates)
+            : [];
+
+        logger.info(`[TravelPlanService] Relevant patterns after rerank: ${JSON.stringify(finalPatterns)}`);
+      } else {
+        logger.warn('[TravelPlanService] No retrieval queries; skipping travel pattern Qdrant step');
       }
-      logger.info(`[TravelPlanService] Relevant travel patterns: ${JSON.stringify(relevantTravelPatterns)}`);
 
       // Starting to generating plan via LLM
       const messages: ChatCompletionMessageParam[] = [
@@ -182,6 +219,7 @@ class TravelPlanService {
             ...body,
             latitude: targetLocationData.latitude,
             longitude: targetLocationData.longitude,
+            travelPatterns: finalPatterns,
           }),
         },
       ];
@@ -238,6 +276,8 @@ class TravelPlanService {
           });
         }
       }
+
+      // TODO: Calling llm again to get final plan
 
       return { ok: true, message: 'Not implemented' };
     } catch (error) {

@@ -41,7 +41,7 @@ export type TravelPatternCategory =
 
 /** Provenance from pattern generation seeds (optional in Qdrant payload). */
 export interface TravelPatternSource {
-  traveler_type: string;
+  season_type: string;
   location_type: string;
   focus_area: string;
 }

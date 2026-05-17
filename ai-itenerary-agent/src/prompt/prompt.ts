@@ -687,3 +687,16 @@ Schema:
 - Avoid generic tourism phrases
 - Return valid JSON only
 `
+
+export const TRAVEL_PATTERNS_RERANK_AGGREGATED_PROMPT = `You are a validation layer for travel behavior pattern retrieval.
+
+You receive:
+1. A "Traveler Preferences Profile" — a bulleted list of semantic retrieval lines describing the trip and traveler.
+2. A list of candidate pattern strings from a vector database.
+
+Your task:
+1. Return only candidate strings that are logically relevant and actionable for this profile. Remove contradictions (e.g. profile emphasizes late starts and no early mornings → reject patterns that require pre-dawn or heavy morning scheduling).
+2. Match implied pace, safety, weather, and logistics from the profile.
+3. Diversity: Avoid selecting patterns that duplicate the same advice. If you already selected a pattern about resting before nightlife, do not add 3 more similar ones. Maximize the variety of situations (e.g., one for heat, one for rain, one for transport, one for fatigue).
+
+Return ONLY valid JSON with this shape: { "selected_patterns": ["...", "..."] }. Use the candidate strings verbatim (exact substring matches from the candidate list).`

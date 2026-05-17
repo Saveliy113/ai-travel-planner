@@ -6,8 +6,7 @@
   "scripts": {
     "generate": "ts-node src/generate-travel-patterns.ts",
     "generate:dry": "ts-node src/generate-travel-patterns.ts --dry-run --limit 1",
-    "upload:qdrant": "ts-node src/upload-travel-patterns-to-qdrant.ts",
-    "upload:qdrant:recreate": "ts-node src/upload-travel-patterns-to-qdrant.ts --recreate"
+    "upload:qdrant": "ts-node src/upload-travel-patterns-to-qdrant.ts"
   },
   "dependencies": {
     "dotenv": "^16.6.0",

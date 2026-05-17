@@ -6,6 +6,8 @@
  *
  * cd ingest && npm install && npm run upload:qdrant
  *
+ * Each run replaces the collection: deletes it if present, recreates empty, then upserts data.
+ *
  * Env:
  *   OPENAI_API_KEY      (required)
  *   QDRANT_URL          optional, default http://127.0.0.1:6333
@@ -27,7 +29,7 @@ dotenv.config({ path: path.join(process.cwd(), '.env') });
 dotenv.config({ path: path.join(process.cwd(), '..', '.env') });
 
 interface PatternSource {
-  traveler_type: string;
+  season_type: string;
   location_type: string;
   focus_area: string;
 }
@@ -91,21 +93,15 @@ async function qdrantJson(ctx: QdrantRestContext, pathname: string, init?: Reque
 
 function parseArgs(argv: string[]): {
   inputPath: string;
-  recreate: boolean;
   batchEmbeddings: number;
   batchUpsert: number;
 } {
   let inputPath = path.join(process.cwd(), 'output', 'travel-patterns.json');
-  let recreate = false;
   let batchEmbeddings = 64;
   let batchUpsert = 64;
 
   for (let i = 2; i < argv.length; i++) {
     const arg = argv[i];
-    if (arg === '--recreate') {
-      recreate = true;
-      continue;
-    }
     if (arg === '--input' && argv[i + 1]) {
       inputPath = path.resolve(argv[++i]);
       continue;
@@ -120,7 +116,7 @@ function parseArgs(argv: string[]): {
     }
   }
 
-  return { inputPath, recreate, batchEmbeddings, batchUpsert };
+  return { inputPath, batchEmbeddings, batchUpsert };
 }
 
 function chunk<T>(arr: T[], size: number): T[][] {
@@ -131,30 +127,10 @@ function chunk<T>(arr: T[], size: number): T[][] {
   return out;
 }
 
-function inferVectorParamsSize(vectors: unknown): number | undefined {
-  if (!vectors || typeof vectors !== 'object') return undefined;
-  if ('size' in vectors && typeof (vectors as { size: unknown }).size === 'number') {
-    return (vectors as { size: number }).size;
-  }
-  for (const v of Object.values(vectors as Record<string, unknown>)) {
-    if (v && typeof v === 'object' && 'size' in v && typeof (v as { size: unknown }).size === 'number') {
-      return (v as { size: number }).size;
-    }
-  }
-  return undefined;
-}
-
 async function collectionExists(ctx: QdrantRestContext, name: string): Promise<boolean> {
   const raw = await qdrantJson(ctx, '/collections', { method: 'GET' });
   const wrapped = raw as QdrantWrapped<{ collections: Array<{ name: string }> }>;
   return (wrapped.result?.collections ?? []).some((c) => c.name === name);
-}
-
-async function getCollectionVectorsSize(ctx: QdrantRestContext, name: string): Promise<number | undefined> {
-  const encoded = encodeURIComponent(name);
-  const raw = await qdrantJson(ctx, `/collections/${encoded}`, { method: 'GET' });
-  const wrapped = raw as QdrantWrapped<{ config?: { params?: { vectors?: unknown } } }>;
-  return inferVectorParamsSize(wrapped.result?.config?.params?.vectors);
 }
 
 async function deleteCollection(ctx: QdrantRestContext, name: string): Promise<void> {
@@ -173,6 +149,16 @@ async function createCollection(ctx: QdrantRestContext, name: string): Promise<v
   await qdrantJson(ctx, `/collections/${encoded}`, { method: 'PUT', body });
 }
 
+/** Drop collection if it exists and create empty — full reload target for each upload run. */
+async function recreateEmptyCollection(ctx: QdrantRestContext, name: string): Promise<void> {
+  if (await collectionExists(ctx, name)) {
+    await deleteCollection(ctx, name);
+    console.log(`Deleted existing collection "${name}" before reload`);
+  }
+  await createCollection(ctx, name);
+  console.log(`Created empty collection "${name}" (${EMBEDDING_DIM} dims, Cosine)`);
+}
+
 async function upsertPoints(
   ctx: QdrantRestContext,
   name: string,
@@ -185,28 +171,6 @@ async function upsertPoints(
     method: 'PUT',
     body: payload,
   });
-}
-
-async function ensureCollection(ctx: QdrantRestContext, name: string, recreate: boolean): Promise<void> {
-  const exists = await collectionExists(ctx, name);
-
-  if (exists && recreate) {
-    await deleteCollection(ctx, name);
-    console.log(`Deleted collection "${name}" (--recreate)`);
-  } else if (exists) {
-    const size = await getCollectionVectorsSize(ctx, name);
-    if (size !== EMBEDDING_DIM) {
-      throw new Error(
-        `Collection "${name}" exists with vector size ${String(size)}, expected ${EMBEDDING_DIM}. ` +
-          `Run with --recreate to replace it.`,
-      );
-    }
-    console.log(`Collection "${name}" already exists; upserting into it.`);
-    return;
-  }
-
-  await createCollection(ctx, name);
-  console.log(`Created collection "${name}" (${EMBEDDING_DIM} dims, Cosine).`);
 }
 
 async function embedBatch(openai: OpenAI, model: string, texts: string[]): Promise<number[][]> {
@@ -224,7 +188,7 @@ async function embedBatch(openai: OpenAI, model: string, texts: string[]): Promi
 }
 
 async function main(): Promise<void> {
-  const { inputPath, recreate, batchEmbeddings, batchUpsert } = parseArgs(process.argv);
+  const { inputPath, batchEmbeddings, batchUpsert } = parseArgs(process.argv);
 
   const qdrantUrlRaw = process.env.QDRANT_URL ?? 'http://127.0.0.1:6333';
   const qdrantCtx: QdrantRestContext = {
@@ -252,7 +216,7 @@ async function main(): Promise<void> {
 
   const openai = new OpenAI({ apiKey });
 
-  await ensureCollection(qdrantCtx, collectionName, recreate);
+  await recreateEmptyCollection(qdrantCtx, collectionName);
 
   let uploaded = 0;
   const patternChunks = chunk(patterns, batchEmbeddings);
@@ -298,7 +262,7 @@ async function main(): Promise<void> {
     }
   }
 
-  console.log(`Done. Upserted ${uploaded} points into "${collectionName}" at ${qdrantCtx.baseUrl}.`);
+  console.log(`Done. Full reload: ${uploaded} points into "${collectionName}" at ${qdrantCtx.baseUrl}.`);
 }
 
 main().catch((err) => {

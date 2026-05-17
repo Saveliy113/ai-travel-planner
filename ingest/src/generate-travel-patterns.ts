@@ -1,14 +1,11 @@
 /**
  * Generates travel heuristic patterns (If–Then rules) via OpenAI structured outputs.
- * Run from repo: cd ingest && npm install && npm run generate
+ * Combinations come from a fixed LOCATION_MAPPING (allowed seasons × focuses per location).
  *
- * Env: OPENAI_API_KEY (required), OPENAI_MODEL (optional, default gpt-4o-mini)
+ * Run: cd ingest && npm run generate
  *
- * Flags:
- *   --limit N      Process only first N seed combinations (smoke tests)
- *   --dry-run      Print planned combinations without calling the API
- *   --output PATH  JSON output path (default ./output/travel-patterns.json)
- *   --delay-ms MS  Pause between API calls (default 400)
+ * Env: OPENAI_API_KEY, OPENAI_MODEL (optional)
+ * Flags: --limit, --dry-run, --output, --delay-ms, --model
  */
 
 import * as crypto from 'crypto';
@@ -41,43 +38,88 @@ export interface TravelPattern {
 }
 
 export interface GeneratedBatchMeta {
-  traveler_type: string;
+  season_type: string;
   location_type: string;
   focus_area: string;
 }
 
-/** Full row as stored in the JSON dump (Qdrant ingest can omit `source`). */
 export interface TravelPatternDocument extends TravelPattern {
   source: GeneratedBatchMeta;
 }
 
-const TRAVELER_TYPES = [
-  'Solo traveler',
-  'Couple',
-  'Family with toddlers',
-  'Family with teenagers',
-  'Senior travelers',
-  'Group of friends',
-] as const;
+const LOCATION_MAPPING: Record<string, { allowed_seasons: string[]; allowed_focuses: string[] }> = {
+  Megacity: {
+    allowed_seasons: [
+      'Peak tourist season',
+      'Off-season / Shoulder season',
+      'Short weekend getaway',
+      'Extreme heat / Summer peak',
+    ],
+    allowed_focuses: ['Luxury', 'Budget', 'Food & gastronomy', 'Nightlife', 'Religion & pilgrimage'],
+  },
+  'Beach resort': {
+    allowed_seasons: [
+      'Peak tourist season',
+      'Off-season / Shoulder season',
+      'Extreme heat / Summer peak',
+      'Monsoon / Rainy season',
+    ],
+    allowed_focuses: ['Luxury', 'Budget', 'Food & gastronomy', 'Nightlife', 'Extreme / adventure'],
+  },
+  'Mountains / hiking': {
+    allowed_seasons: [
+      'Peak tourist season',
+      'Off-season / Shoulder season',
+      'Winter / Freeze conditions',
+      'Monsoon / Rainy season',
+    ],
+    allowed_focuses: ['Extreme / adventure', 'Budget', 'Road-tripping / Driving'],
+  },
+  'Historical ruins': {
+    allowed_seasons: [
+      'Peak tourist season',
+      'Off-season / Shoulder season',
+      'Extreme heat / Summer peak',
+      'Short weekend getaway',
+    ],
+    allowed_focuses: ['Budget', 'Luxury', 'Religion & pilgrimage', 'Food & gastronomy'],
+  },
+  Jungle: {
+    allowed_seasons: ['Peak tourist season', 'Off-season / Shoulder season', 'Monsoon / Rainy season'],
+    allowed_focuses: ['Extreme / adventure', 'Budget', 'Luxury'],
+  },
+  'Rural countryside / Small villages': {
+    allowed_seasons: [
+      'Peak tourist season',
+      'Off-season / Shoulder season',
+      'Short weekend getaway',
+      'Winter / Freeze conditions',
+    ],
+    allowed_focuses: ['Budget', 'Food & gastronomy', 'Religion & pilgrimage', 'Road-tripping / Driving'],
+  },
+  'Desert / Arid zones': {
+    allowed_seasons: ['Peak tourist season', 'Winter / Freeze conditions', 'Extreme heat / Summer peak'],
+    allowed_focuses: ['Extreme / adventure', 'Luxury', 'Road-tripping / Driving'],
+  },
+};
 
-const LOCATION_TYPES = [
-  'Megacity',
-  'Beach resort',
-  'Mountains / hiking',
-  'Historical ruins',
-  'Jungle',
-] as const;
+function generateValidCombinations(): GeneratedBatchMeta[] {
+  const out: GeneratedBatchMeta[] = [];
 
-const FOCUS_AREAS = [
-  'Extreme / adventure',
-  'Luxury',
-  'Budget',
-  'Food & gastronomy',
-  'Nightlife',
-  'Religion & pilgrimage',
-] as const;
+  for (const [location, mapping] of Object.entries(LOCATION_MAPPING)) {
+    for (const season of mapping.allowed_seasons) {
+      for (const focus of mapping.allowed_focuses) {
+        out.push({
+          season_type: season,
+          location_type: location,
+          focus_area: focus,
+        });
+      }
+    }
+  }
+  return out;
+}
 
-/** Strict JSON Schema for OpenAI structured outputs (single batch per seed triple). */
 const PATTERNS_RESPONSE_SCHEMA = {
   type: 'object',
   additionalProperties: false,
@@ -111,46 +153,21 @@ const PATTERNS_RESPONSE_SCHEMA = {
   required: ['patterns'],
 } as const;
 
-function buildSystemPrompt(travelerType: string, locationType: string, focusArea: string): string {
+function buildSystemPrompt(seasonType: string, locationType: string, focusArea: string): string {
   return `You are an expert Travel Knowledge Engineer. Your task is to generate heuristic travel patterns (If-Then rules) for an AI Trip Planner.
 
 CURRENT CONTEXT:
-- Traveler Type: ${travelerType}
+- Season/Timing Context: ${seasonType}
 - Location Type: ${locationType}
 - Focus Area: ${focusArea}
 
 REQUIREMENTS:
 1. Generate 5 unique, highly specific travel patterns based on the context above.
 2. Patterns must focus on realistic constraints: physical fatigue, logistics, weather, or safety.
-3. Extract 2-3 extremely short, punchy keywords (tags) for each pattern (e.g., "nightclub", "spf", "altitude", "museum"). Do not inflate keywords.
-4. Output strictly in JSON format matching this schema:
-{
-  "patterns": [
-    {
-      "category": "string",
-      "tags": ["string"],
-      "condition": "string",
-      "action": "string",
-      "embedding_text": "string (combine condition and core entities for vectorization)"
-    }
-  ]
-}`;
-}
+3. Extract 2-3 extremely short, punchy keywords (tags) for each pattern.
+4. For "embedding_text", combine the environment context, condition, and action so it remains completely unique. Format: "Context: ${locationType} (${seasonType}) - ${focusArea}. If [Condition], then [Action]."
 
-function cartesianProduct<A extends readonly string[], B extends readonly string[], C extends readonly string[]>(
-  a: A,
-  b: B,
-  c: C,
-): Array<{ traveler_type: A[number]; location_type: B[number]; focus_area: C[number] }> {
-  const out: Array<{ traveler_type: A[number]; location_type: B[number]; focus_area: C[number] }> = [];
-  for (const traveler_type of a) {
-    for (const location_type of b) {
-      for (const focus_area of c) {
-        out.push({ traveler_type, location_type, focus_area });
-      }
-    }
-  }
-  return out;
+Output strictly in JSON format matching the schema.`;
 }
 
 function parseArgs(argv: string[]): {
@@ -202,13 +219,13 @@ async function callOpenAiBatch(
   model: string,
   combo: GeneratedBatchMeta,
 ): Promise<Omit<TravelPatternDocument, 'id'>[]> {
-  const systemPrompt = buildSystemPrompt(combo.traveler_type, combo.location_type, combo.focus_area);
+  const systemPrompt = buildSystemPrompt(combo.season_type, combo.location_type, combo.focus_area);
 
   const completion = await client.chat.completions.create({
     model,
     messages: [
       { role: 'system', content: systemPrompt },
-      { role: 'user', content: 'Return exactly one JSON object that matches the schema. No prose.' },
+      { role: 'user', content: 'Return exactly one JSON object. No prose.' },
     ],
     response_format: {
       type: 'json_schema',
@@ -242,14 +259,7 @@ async function withRetries<T>(fn: () => Promise<T>, label: string, maxAttempts =
     } catch (e) {
       lastErr = e;
       attempt += 1;
-      const status = (e as { status?: number }).status;
-      const retryAfter = (e as { headers?: { get?: (k: string) => string | null } }).headers?.get?.(
-        'retry-after',
-      );
-      const backoff =
-        status === 429
-          ? Math.min(30_000, 1000 * 2 ** attempt + (retryAfter ? parseFloat(retryAfter) * 1000 : 0))
-          : Math.min(10_000, 500 * 2 ** attempt);
+      const backoff = Math.min(10_000, 500 * 2 ** attempt);
       console.warn(`[retry ${attempt}/${maxAttempts}] ${label}: ${String(e)} — waiting ${backoff}ms`);
       await sleep(backoff);
     }
@@ -272,21 +282,21 @@ function dedupeByEmbeddingText(patterns: TravelPatternDocument[]): TravelPattern
 async function main(): Promise<void> {
   const { limit, dryRun, outputPath, delayMs, model } = parseArgs(process.argv);
 
-  const combos = cartesianProduct(TRAVELER_TYPES, LOCATION_TYPES, FOCUS_AREAS);
+  const combos = generateValidCombinations();
   const slice = typeof limit === 'number' ? combos.slice(0, limit) : combos;
 
-  console.log(`Combinations: ${slice.length} (of ${combos.length} total)`);
+  console.log(`Total highly valid combinations to process: ${slice.length}`);
 
   if (dryRun) {
-    console.log(JSON.stringify(slice.slice(0, Math.min(5, slice.length)), null, 2));
-    if (slice.length > 5) console.log(`… ${slice.length - 5} more combinations`);
+    console.log(JSON.stringify(slice.slice(0, Math.min(10, slice.length)), null, 2));
+    if (slice.length > 10) console.log(`… and ${slice.length - 10} more valid combos.`);
     console.log('(dry-run: no API calls)');
     return;
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    console.error('OPENAI_API_KEY is not set. Add it to ingest/.env or export in shell.');
+    console.error('OPENAI_API_KEY is not set.');
     process.exit(1);
   }
 
@@ -296,7 +306,7 @@ async function main(): Promise<void> {
   let index = 0;
   for (const combo of slice) {
     index += 1;
-    const label = `[${index}/${slice.length}] ${combo.traveler_type} × ${combo.location_type} × ${combo.focus_area}`;
+    const label = `[${index}/${slice.length}] ${combo.location_type} × ${combo.season_type} × ${combo.focus_area}`;
     console.log(label);
 
     const batch = await withRetries(() => callOpenAiBatch(client, model, combo), label);
@@ -320,17 +330,14 @@ async function main(): Promise<void> {
     generated_at: new Date().toISOString(),
     model,
     seed_counts: {
-      traveler_types: TRAVELER_TYPES.length,
-      location_types: LOCATION_TYPES.length,
-      focus_areas: FOCUS_AREAS.length,
-      combinations_requested: slice.length,
+      valid_combinations_processed: slice.length,
     },
     total_patterns: deduped.length,
     patterns: deduped,
   };
 
   await fs.writeFile(outputPath, JSON.stringify(payload, null, 2), 'utf8');
-  console.log(`Wrote ${deduped.length} patterns (${documents.length} before dedupe) → ${outputPath}`);
+  console.log(`\nSuccessfully wrote ${deduped.length} clean, deduplicated patterns to ${outputPath}`);
 }
 
 main().catch((err) => {
