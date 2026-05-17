@@ -6,7 +6,7 @@ import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import { InMemoryEventStore } from '@modelcontextprotocol/sdk/examples/shared/inMemoryEventStore.js';
 
 import Route from '../interfaces/routes.interface';
-import { server, streamableTransports } from '../loaders/mcpServer';
+import { createMcpServer, streamableTransports } from '../loaders/mcpServer';
 import { logger } from '../utils/logger';
 
 function mcpSessionHeader(req: Request): string | undefined {
@@ -46,6 +46,7 @@ class McpRoutes implements Route {
             return;
           }
         } else if (req.method === 'POST' && isInitializeRequest(req.body)) {
+          const mcpServer = createMcpServer();
           const eventStore = new InMemoryEventStore();
           transport = new StreamableHTTPServerTransport({
             sessionIdGenerator: () => randomUUID(),
@@ -61,8 +62,9 @@ class McpRoutes implements Route {
               streamableTransports.delete(sid);
               logger.info(`[MCP] Streamable HTTP session closed: ${sid}`);
             }
+            void mcpServer.close().catch(() => undefined);
           };
-          await server.connect(transport);
+          await mcpServer.connect(transport);
         } else {
           res.status(400).json({
             jsonrpc: '2.0',
