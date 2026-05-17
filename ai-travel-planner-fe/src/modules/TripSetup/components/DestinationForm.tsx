@@ -37,6 +37,8 @@ export const DestinationForm = () => {
           // If validation successfull (data.clarificationRequired is false),
           // proceed to next step
           if (!data.clarificationRequired) {
+            setNormalizedDestination(data.normalizedLocation)
+            setLocationType(data.locationType)
             setStep(2)
           }
           else {
