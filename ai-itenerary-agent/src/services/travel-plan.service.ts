@@ -1,18 +1,20 @@
 import axios from 'axios';
+import moment from 'moment';
 import type { FunctionParameters } from 'openai/resources/shared';
 
-import type { TravelPlanGenerateBody, TravelPlanGenerateResult } from '../interfaces/travel-plan.interface';
+import type { TravelPlanGenerateBody, TravelPlanGenerateResult, TravelPattern } from '../interfaces/travel-plan.interface';
 import type { McpToolDefinition, OpenAITool } from '../interfaces/general.interface';
 import { logger } from '../utils/logger';
 import { weatherAgentClient, locationAgentClient } from '../loaders/mcpClient';
-import { EXTRACT_POI_CATEGORIES_PROMPT, TRAVEL_PLAN_GENERATE_PROMPT } from '../prompt/prompt';
+import { EXTRACT_POI_CATEGORIES_PROMPT, TRAVEL_PATTERNS_RETRIEVAL_PROMPT, TRAVEL_PLAN_GENERATE_PROMPT } from '../prompt/prompt';
 import { openai } from '../loaders/openai';
 import { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import { CallToolResultSchema, type CallToolResult } from '@modelcontextprotocol/sdk/types.js';
-import moment from 'moment';
+import { qdrantClient } from '../loaders/qdrant';
 
 class TravelPlanService {
   private llmModel = process.env.OPENAI_MODEL || 'gpt-5-mini-2025-08-07';
+  private openaiEmbeddingModel = process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-large';
 
   private getTools(tools: McpToolDefinition[]): OpenAITool[] {
     return tools.map((tool) => ({
@@ -82,6 +84,20 @@ class TravelPlanService {
     }
   }
 
+
+  private async getOpenaiEmbedding(text: string): Promise<number[]> {
+    try {
+      const result = await openai.embeddings.create({
+        model: this.openaiEmbeddingModel,
+        input: text,
+      });
+      return result.data[0].embedding;
+    } catch (error) {
+      logger.error(`[TravelPlanService] getOpenaiEmbedding: ${error instanceof Error ? error.message : error}`);
+      throw error;
+    }
+  }
+
   public async generate(body: TravelPlanGenerateBody): Promise<TravelPlanGenerateResult> {
     try {
       logger.info(`[TravelPlanService] generate (stub) destination="${body.destination}"`);
@@ -120,6 +136,39 @@ class TravelPlanService {
       logger.info(
         `[TravelPlanService] Location: ${body.destination}; Latitude: ${targetLocationData.latitude}; Longitude: ${targetLocationData.longitude}`,
       );
+
+      // Generating search queries for travel patterns
+      logger.info(`[TravelPlanService] Generating search queries for travel patterns`);
+      const searchQueries = await openai.chat.completions.create({
+        model: this.llmModel,
+        messages: [
+          { role: 'system', content: TRAVEL_PATTERNS_RETRIEVAL_PROMPT },
+          { role: 'user', content: JSON.stringify(body) },
+        ],
+      });
+
+      const searchQueriesData = JSON.parse(searchQueries.choices[0].message.content || '[]');
+      logger.info(`[TravelPlanService] Search Queries: ${JSON.stringify(searchQueriesData)}`);
+
+      // Retrieving travel patterns from qdrant
+      logger.info(`[TravelPlanService] Retrieving travel patterns from qdrant`);
+      let relevantTravelPatterns: string[] = [];
+      for (const query of searchQueriesData.queries) {
+        const embedding = await this.getOpenaiEmbedding(query);
+        const results = await qdrantClient.search('travel_patterns', {
+          vector: embedding,
+          with_payload: true,
+          score_threshold: 0.7,
+          limit: 1,
+        });
+
+        for (const point of results) {
+          if (point.payload && typeof point.payload.embedding_text === 'string') {
+            relevantTravelPatterns.push(point.payload.embedding_text);
+          }
+        }
+      }
+      logger.info(`[TravelPlanService] Relevant travel patterns: ${JSON.stringify(relevantTravelPatterns)}`);
 
       // Starting to generating plan via LLM
       const messages: ChatCompletionMessageParam[] = [
@@ -189,8 +238,6 @@ class TravelPlanService {
           });
         }
       }
-
-      // TODO: Retrieving travel patterns from qdrant
 
       return { ok: true, message: 'Not implemented' };
     } catch (error) {
