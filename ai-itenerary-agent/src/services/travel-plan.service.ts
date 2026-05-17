@@ -6,9 +6,9 @@ import type { TravelPlanGenerateBody, TravelPlanGenerateResult } from '../interf
 import type { McpToolDefinition, OpenAITool } from '../interfaces/general.interface';
 import { logger } from '../utils/logger';
 import { weatherAgentClient, locationAgentClient } from '../loaders/mcpClient';
-import { EXTRACT_POI_CATEGORIES_PROMPT, TRAVEL_PATTERNS_RETRIEVAL_PROMPT, TRAVEL_PATTERNS_RERANK_AGGREGATED_PROMPT, TRAVEL_PLAN_GENERATE_PROMPT } from '../prompt/prompt';
+import { EXTRACT_POI_CATEGORIES_PROMPT, TRAVEL_PATTERNS_RETRIEVAL_PROMPT, TRAVEL_PATTERNS_RERANK_AGGREGATED_PROMPT, TRAVEL_PLAN_GENERATE_PROMPT, TRAVEL_PLAN_TOOLS_INSTRUCTIONS_PROMPT } from '../prompt/prompt';
 import { openai } from '../loaders/openai';
-import { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
+import type { ChatCompletionMessage, ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import { CallToolResultSchema, type CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { qdrantClient } from '../loaders/qdrant';
 
@@ -122,6 +122,93 @@ class TravelPlanService {
     }
   }
 
+  private functionToolNames(message: ChatCompletionMessage | undefined): string[] {
+    if (!message?.tool_calls?.length) return [];
+    return message.tool_calls.filter((t) => t.type === 'function').map((t) => t.function.name);
+  }
+
+  /** One LLM completion with tools + executing returned function calls. Logs whether get_poi was requested. */
+  private async runLlmToolRound(params: {
+    round: number;
+    messages: ChatCompletionMessageParam[];
+    openaiTools: OpenAITool[];
+    toolChoice: 'required' | 'auto';
+    body: TravelPlanGenerateBody;
+    targetLocation: string;
+    travelDurationDays: number;
+  }): Promise<void> {
+    const { round, messages, openaiTools, toolChoice, body, targetLocation, travelDurationDays } = params;
+
+    logger.info(
+      `[TravelPlanService] LLM tool round ${round} · start (tool_choice=${toolChoice}, tools=${openaiTools.map((t) => t.function.name).join(', ')})`,
+    );
+
+    const llmResponse = await openai.chat.completions.create({
+      model: this.llmModel,
+      tools: openaiTools,
+      tool_choice: toolChoice,
+      messages,
+    });
+
+    const message = llmResponse.choices[0]?.message;
+    if (!message) {
+      throw new Error('Empty response from OpenAI');
+    }
+
+    const names = this.functionToolNames(message);
+    const getPoiInResponse = names.includes('get_poi');
+    logger.info(
+      `[TravelPlanService] LLM tool round ${round} · assistant tool calls: [${names.join(', ') || 'none'}] · get_poi in this response: ${getPoiInResponse}`,
+    );
+
+    if (!message.tool_calls?.length) {
+      logger.warn(
+        `[TravelPlanService] LLM tool round ${round} · no tool_calls (finish_reason may be stop/text only)`,
+      );
+      messages.push(message);
+      return;
+    }
+
+    messages.push(message);
+
+    for (const toolCall of message.tool_calls) {
+      if (toolCall.type !== 'function') {
+        logger.warn(`[TravelPlanService] Skipping non-function tool call type=${toolCall.type}`);
+        continue;
+      }
+
+      const functionName = toolCall.function.name;
+      const args = JSON.parse(toolCall.function.arguments);
+
+      logger.info(
+        `[TravelPlanService] LLM tool round ${round} · executing MCP tool: ${functionName} · is_get_poi=${functionName === 'get_poi'}`,
+      );
+
+      const result = await this.callTool(
+        functionName,
+        functionName === 'get_forecast'
+          ? args
+          : {
+              destination: body.destination,
+              clarification: targetLocation,
+              travelDurationDays: travelDurationDays,
+              interests: body.interests,
+              additionalPreferences: body.additionalPreferences,
+            },
+      );
+
+      logger.info(`[TravelPlanService] MCP tool result (${functionName}): ${JSON.stringify(result)}`);
+
+      messages.push({
+        tool_call_id: toolCall.id,
+        role: 'tool',
+        content: result.content
+          .map((block) => (block.type === 'text' ? block.text : JSON.stringify(block)))
+          .join('\n'),
+      });
+    }
+  }
+
   public async generate(body: TravelPlanGenerateBody): Promise<TravelPlanGenerateResult> {
     try {
       logger.info(`[TravelPlanService] generate (stub) destination="${body.destination}"`);
@@ -215,6 +302,10 @@ class TravelPlanService {
         },
         {
           role: 'user',
+          content: TRAVEL_PLAN_TOOLS_INSTRUCTIONS_PROMPT,
+        },
+        {
+          role: 'user',
           content: JSON.stringify({
             ...body,
             latitude: targetLocationData.latitude,
@@ -224,65 +315,41 @@ class TravelPlanService {
         },
       ];
 
-      const llmResponse = await openai.chat.completions.create({
-        model: this.llmModel,
-        tools: openaiTools,
-        tool_choice: "auto",
+      await this.runLlmToolRound({
+        round: 1,
         messages,
+        openaiTools,
+        toolChoice: 'required',
+        body,
+        targetLocation,
+        travelDurationDays,
       });
 
-      const message = llmResponse.choices[0].message;
+      messages.push({
+        role: 'user',
+        content:
+          '[Orchestration test — tool round 2] If get_poi was not called in round 1, you MUST call get_poi now. If both get_forecast and get_poi already ran, you may respond without additional tool calls.',
+      });
 
-      if (!message) {
-        throw new Error('Empty response from OpenAI');
-      }
-
-      // If LLM used tools,
-      // call tools by MCP Client
-      if (message.tool_calls && message.tool_calls.length > 0) {
-        logger.info(
-          `[TravelPlanService] LLM used tools: ${message.tool_calls
-            .filter((t) => t.type === 'function')
-            .map((t) => t.function.name)
-            .join(', ')}`,
-        );
-        for (const toolCall of message.tool_calls) {
-          if (toolCall.type !== 'function') {
-            logger.warn(`[TravelPlanService] Skipping non-function tool call type=${toolCall.type}`);
-            continue;
-          }
-
-          // Defining tool name and arguments
-          const functionName = toolCall.function.name;
-          const args = JSON.parse(toolCall.function.arguments);
-
-          // Calling MCP tool (arguments come from the model; must match MCP tool schemas)
-          logger.info(`[TravelPlanService] Calling MCP tool: ${functionName}`);
-          const result = await this.callTool(functionName, functionName === 'get_forecast' ? args : {
-            destination: body.destination,
-            clarification: targetLocation,
-            travelDurationDays: travelDurationDays,
-            interests: body.interests,
-            additionalPreferences: body.additionalPreferences,
-          });
-          logger.info(`[TravelPlanService] MCP tool result: ${JSON.stringify(result)}`);
-
-          messages.push({
-            tool_call_id: toolCall.id,
-            role: 'tool',
-            content: result.content
-              .map((block) => (block.type === 'text' ? block.text : JSON.stringify(block)))
-              .join('\n'),
-          });
-        }
-      }
+      await this.runLlmToolRound({
+        round: 2,
+        messages,
+        openaiTools,
+        toolChoice: 'auto',
+        body,
+        targetLocation,
+        travelDurationDays,
+      });
 
       // Calling llm again to get final plan
       logger.info(`[TravelPlanService] Calling llm again to get final plan`);
       const finalPlanCompletion = await openai.chat.completions.create({
         model: this.llmModel,
         messages,
+        response_format: { type: 'json_object' },
       });
+
+      console.log('!!! FINAL PLAN COMPLETION !!!: ', finalPlanCompletion.choices[0].message.content);
       const finalPlan = JSON.parse(finalPlanCompletion.choices[0].message.content || '{}');
       logger.info(`[TravelPlanService] Final plan: ${JSON.stringify(finalPlan, null, 2)}`);
 
