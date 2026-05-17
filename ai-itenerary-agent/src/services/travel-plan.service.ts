@@ -183,7 +183,7 @@ class TravelPlanService {
 
         const embedding = await this.getOpenaiEmbedding(aggregatedProfileText);
 
-        logger.info(`[TravelPlanService] Searcing travel patterns in Qdrant`);
+        logger.info(`[TravelPlanService] Searching travel patterns in Qdrant`);
         const rawResults = await qdrantClient.search('travel_patterns', {
           vector: embedding,
           with_payload: true,
@@ -192,8 +192,8 @@ class TravelPlanService {
         });
 
         const candidates: string[] = rawResults
-        .map((payload: Record<string, unknown>) => String((payload as { embedding_text?: string })?.embedding_text || '').trim())
-        .filter((s: string) => s.length > 0);
+          .map((point: Record<string, unknown>) => String((point.payload as { embedding_text?: string })?.embedding_text || '').trim())
+          .filter((s: string) => s.length > 0);
 
         logger.info(`[TravelPlanService] Candidate patterns before rerank: ${candidates.length}`);
 
