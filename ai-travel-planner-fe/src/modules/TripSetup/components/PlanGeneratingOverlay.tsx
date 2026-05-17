@@ -45,14 +45,16 @@ export function PlanGeneratingOverlay({ open, className }: PlanGeneratingOverlay
     >
       <div className="absolute inset-0 bg-background/55 backdrop-blur-md" />
       <div className="relative z-[1] flex w-full max-w-md flex-col items-center gap-6 rounded-2xl border border-black/10 bg-white/90 px-8 py-10 text-center shadow-[0_24px_80px_-28px_rgba(0,0,0,0.35)]">
-        <div className="relative flex h-16 w-16 items-center justify-center">
-          <span className="absolute inset-0 animate-pulse rounded-2xl bg-primary/15" aria-hidden />
-          <span className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-primary/12 text-primary">
-            <Sparkles className="size-7" aria-hidden />
-          </span>
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative flex size-14 items-center justify-center">
+            <span className="absolute inset-0 animate-pulse rounded-2xl bg-primary/15" aria-hidden />
+            <span className="relative flex size-12 items-center justify-center rounded-xl bg-primary/12 text-primary">
+              <Sparkles className="size-7" aria-hidden />
+            </span>
+          </div>
           <Loader2
-            className="absolute -bottom-1 -right-1 size-8 animate-spin text-primary/80"
             aria-hidden
+            className="size-7 animate-spin text-primary/80 sm:size-8"
           />
         </div>
         <div className="space-y-2">
