@@ -3,6 +3,7 @@ import moment from 'moment';
 import type { FunctionParameters } from 'openai/resources/shared';
 
 import type { TravelPlanGenerateBody, TravelPlanGenerateResult } from '../interfaces/travel-plan.interface';
+import { broadcastTravelPlanEvent } from '../ws/travel-plan-ws.hub';
 import type { McpToolDefinition, OpenAITool } from '../interfaces/general.interface';
 import { logger } from '../utils/logger';
 import { weatherAgentClient, locationAgentClient } from '../loaders/mcpClient';
@@ -209,7 +210,7 @@ class TravelPlanService {
     }
   }
 
-  public async generate(body: TravelPlanGenerateBody): Promise<TravelPlanGenerateResult> {
+  public async generate(body: TravelPlanGenerateBody, jobId: string): Promise<TravelPlanGenerateResult> {
     try {
       logger.info(`[TravelPlanService] generate (stub) destination="${body.destination}"`);
 
@@ -349,11 +350,12 @@ class TravelPlanService {
         response_format: { type: 'json_object' },
       });
 
-      console.log('!!! FINAL PLAN COMPLETION !!!: ', finalPlanCompletion.choices[0].message.content);
       const finalPlan = JSON.parse(finalPlanCompletion.choices[0].message.content || '{}');
       logger.info(`[TravelPlanService] Final plan: ${JSON.stringify(finalPlan, null, 2)}`);
 
-      return { ok: true, message: 'Not implemented' };
+      broadcastTravelPlanEvent(jobId, { type: 'plan_done', jobId, plan: finalPlan });
+
+      return { ok: true, message: 'completed' };
     } catch (error) {
       logger.error(
         `[TravelPlanService] generate: ${error instanceof Error ? error.message : error}`,

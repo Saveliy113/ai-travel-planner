@@ -43,6 +43,11 @@ class App {
     return this.app;
   }
 
+  /** Underlying Node HTTP server (set after `listen()`). */
+  public getHttpServer(): Server | null {
+    return this.server;
+  }
+
   public closeServer(): void {
     this.server?.close(() => {
       logger.info('HTTP server closed');

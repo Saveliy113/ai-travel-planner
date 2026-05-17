@@ -16,6 +16,69 @@ export interface TravelPlanGenerateBody {
   additionalPreferences?: string;
 }
 
+/** Immediate HTTP response from POST /travel-plan/generate (generation continues in background). */
+export interface TravelPlanGenerateAcceptedResponse {
+  ok: true;
+  jobId: string;
+}
+
+/** Final itinerary JSON shape (matches TRAVEL_PLAN_GENERATE_PROMPT in prompt.ts). */
+export interface TravelPlanActivityPoi {
+  name: string;
+  placeId: string;
+}
+
+export interface TravelPlanActivity {
+  startTime: string;
+  endTime: string;
+  type: string;
+  title: string;
+  description: string;
+  poi: TravelPlanActivityPoi;
+  reasoning: string;
+  tips: string[];
+}
+
+export interface TravelPlanDayWeather {
+  summary: string;
+  temperatureMin: number;
+  temperatureMax: number;
+  precipitationMm: number;
+}
+
+export interface TravelPlanFoodRec {
+  type: 'breakfast' | 'lunch' | 'dinner' | 'drinks';
+  name: string;
+  reasoning: string;
+}
+
+export interface TravelPlanBackupOption {
+  condition: string;
+  alternative: string;
+}
+
+export interface TravelPlanDay {
+  date: string;
+  dayNumber: number;
+  weather: TravelPlanDayWeather;
+  area: string;
+  pace: 'light' | 'moderate' | 'active';
+  activities: TravelPlanActivity[];
+  foodRecommendations: TravelPlanFoodRec[];
+  backupOptions: TravelPlanBackupOption[];
+  dailyNotes: string[];
+}
+
+export interface TravelPlanJson {
+  destination: string;
+  summary: {
+    tripStyle: string;
+    weatherOverview: string;
+    planningLogic: string;
+  };
+  days: TravelPlanDay[];
+}
+
 /** Extend when the generate flow returns real data. */
 export interface TravelPlanGenerateResult {
   ok: boolean;

@@ -7,7 +7,25 @@ import type {
   TripSetupStore,
 } from "@/modules/TripSetup/model/tripSetup.interface"
 
-export const useTripSetupStore = create<TripSetupStore>((set) => ({
+const tripSetupInitialState: Omit<
+  TripSetupStore,
+  | "setStep"
+  | "setDestination"
+  | "setNormalizedDestination"
+  | "setFirstStepPhase"
+  | "setClarificationReason"
+  | "setClarificationOptions"
+  | "setSelectedClarification"
+  | "setSelectedClarificationDescription"
+  | "setLocationType"
+  | "setStartDate"
+  | "setEndDate"
+  | "setBudget"
+  | "setInterestCategories"
+  | "toggleInterestSelection"
+  | "setAdditionalPreferences"
+  | "reset"
+> = {
   step: 1,
   destination: "",
   normalizedDestination: "",
@@ -23,6 +41,11 @@ export const useTripSetupStore = create<TripSetupStore>((set) => ({
   interestCategories: [],
   selectedInterestLabels: [],
   additionalPreferences: "",
+}
+
+export const useTripSetupStore = create<TripSetupStore>((set) => ({
+  ...tripSetupInitialState,
+  reset: () => set(tripSetupInitialState),
   setStep: (step: number) => set({ step }),
   setDestination: (destination: string) => set({ destination }),
   setNormalizedDestination: (destination: string) => set({ normalizedDestination: destination.trim() }),

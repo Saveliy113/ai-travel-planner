@@ -28,7 +28,8 @@ export async function generateTravelSetupPlan(
   try {
     const { data } = await itineraryAgentApi.post<TravelSetupGenerateResult>(
       "/travel-plan/generate",
-      payload
+      payload,
+      { timeout: 30_000 }
     )
 
     return data

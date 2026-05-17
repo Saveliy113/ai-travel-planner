@@ -1,35 +1,47 @@
+import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 
 import { cn } from "@/lib/utils"
+import { waitForItineraryPlan } from "@/modules/TripSetup/api/itineraryPlan.ws"
 import { AdditionalPreferencesForm } from "@/modules/TripSetup/components/AdditionalPreferencesForm"
 import { DatesBudgetForm } from "@/modules/TripSetup/components/DatesBudgetForm"
 import { DestinationForm } from "@/modules/TripSetup/components/DestinationForm"
 import { InterestsForm } from "@/modules/TripSetup/components/InterestsForm"
+import { PlanGeneratingOverlay } from "@/modules/TripSetup/components/PlanGeneratingOverlay"
 import { TripSetupSummary } from "@/modules/TripSetup/components/TripSetupSummary"
 import { generateTravelSetupPlan } from "@/modules/TripSetup/api/travelPlanner.api"
 import type { TripSetupModuleProps } from "@/modules/TripSetup/model/tripSetup.interface"
+import { useTripResultStore } from "@/modules/TripSetup/store/tripResult.store"
 import { Button } from "@/shared/ui/button"
 import { useTripSetupStore } from "./store/tripSetup.store"
 
 const TripSetupModule = ({ className }: TripSetupModuleProps) => {
   const tripSetupStore = useTripSetupStore()
+  const setPlan = useTripResultStore((s) => s.setPlan)
+  const navigate = useNavigate()
+  const [isGenerating, setIsGenerating] = useState(false)
 
   const handleCreatePlan = async (): Promise<void> => {
+    setIsGenerating(true)
     try {
       const s = useTripSetupStore.getState()
-      const travelPlan = await generateTravelSetupPlan({
+      const { jobId } = await generateTravelSetupPlan({
         destination: `${s.normalizedDestination}${s.selectedClarification ? `, ${s.selectedClarification}` : ""}`,
         startDate: s.startDate,
         endDate: s.endDate,
         budget: s.budget,
-        interests: s.interestCategories.filter((c) =>
-          s.selectedInterestLabels.includes(c.label),
-        ),
+        interests: s.interestCategories.filter((c) => s.selectedInterestLabels.includes(c.label)),
         additionalPreferences: s.additionalPreferences,
       })
-      console.log("[Create Plan] travel plan", travelPlan)
+      const plan = await waitForItineraryPlan(jobId)
+      setPlan(plan)
+      s.reset()
+      navigate("/plan/result")
     } catch (error) {
       toast.error(String(error))
+    } finally {
+      setIsGenerating(false)
     }
   }
 
@@ -40,6 +52,8 @@ const TripSetupModule = ({ className }: TripSetupModuleProps) => {
         className
       )}
     >
+      <PlanGeneratingOverlay open={isGenerating} />
+
       {tripSetupStore.step === 1 && <DestinationForm />}
 
       {tripSetupStore.step === 2 && <DatesBudgetForm />}

@@ -52,11 +52,8 @@ export interface TripSetupPlanPayload {
   additionalPreferences: string
 }
 
-/** Response from itinerary agent `POST /travel-plan/generate` (stub until real plan data). */
-export interface TravelSetupGenerateResult {
-  ok: boolean
-  message?: string
-}
+/** Immediate response from `POST /travel-plan/generate` (plan completes over WebSocket). */
+export type TravelSetupGenerateResult = import("./travel-plan-result.interface").TravelPlanGenerateAcceptedResponse
 
 export interface TripSetupStore {
   step: number;
@@ -89,4 +86,5 @@ export interface TripSetupStore {
   toggleInterestSelection: (label: string) => void;
   additionalPreferences: string;
   setAdditionalPreferences: (value: string) => void;
+  reset: () => void;
 }
