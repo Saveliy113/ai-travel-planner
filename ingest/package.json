@@ -1,0 +1,21 @@
+{
+  "name": "travel-patterns-ingest",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Generate travel heuristic patterns via OpenAI for later Qdrant ingest",
+  "scripts": {
+    "generate": "ts-node src/generate-travel-patterns.ts",
+    "generate:dry": "ts-node src/generate-travel-patterns.ts --dry-run --limit 1",
+    "upload:qdrant": "ts-node src/upload-travel-patterns-to-qdrant.ts",
+    "upload:qdrant:recreate": "ts-node src/upload-travel-patterns-to-qdrant.ts --recreate"
+  },
+  "dependencies": {
+    "dotenv": "^16.6.0",
+    "openai": "^6.37.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}

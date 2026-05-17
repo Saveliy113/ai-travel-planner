@@ -45,7 +45,6 @@ class TravelPlanService {
           break;
         case 'get_poi':
           // Getting detailed categories for the destination and interests
-          console.log(args);
           const completion = await openai.chat.completions.create({
             model: this.llmModel,
             messages: [
@@ -68,9 +67,6 @@ class TravelPlanService {
             count: category.count,
           })),
         };
-  
-        console.log('CATEGORIES DATA: ', params.arguments);
-
 
           raw = await locationAgentClient.callTool(params, undefined, {
             timeout: 300_000,
@@ -193,6 +189,8 @@ class TravelPlanService {
           });
         }
       }
+
+      // TODO: Retrieving travel patterns from qdrant
 
       return { ok: true, message: 'Not implemented' };
     } catch (error) {
