@@ -277,7 +277,14 @@ class TravelPlanService {
         }
       }
 
-      // TODO: Calling llm again to get final plan
+      // Calling llm again to get final plan
+      logger.info(`[TravelPlanService] Calling llm again to get final plan`);
+      const finalPlanCompletion = await openai.chat.completions.create({
+        model: this.llmModel,
+        messages,
+      });
+      const finalPlan = JSON.parse(finalPlanCompletion.choices[0].message.content || '{}');
+      logger.info(`[TravelPlanService] Final plan: ${JSON.stringify(finalPlan, null, 2)}`);
 
       return { ok: true, message: 'Not implemented' };
     } catch (error) {
