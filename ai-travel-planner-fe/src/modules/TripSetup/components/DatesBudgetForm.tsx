@@ -32,9 +32,11 @@ export const DatesBudgetForm = () => {
   const todayStart = startOfDay(new Date())
   const parsedStart = startDate ? parse(startDate, "yyyy-MM-dd", new Date()) : undefined
 
+  const datesFilled = Boolean(startDate.trim()) && Boolean(endDate.trim())
+
   const handleNext = async (): Promise<void> => {
     const dest = destination.trim()
-    if (!dest || interestsPending) return
+    if (!dest || interestsPending || !datesFilled) return
     setInterestsError(null)
     setInterestsPending(true)
     try {
@@ -157,7 +159,11 @@ export const DatesBudgetForm = () => {
         <Button
           aria-busy={interestsPending}
           className="gap-1.5 rounded-full px-5 shadow-sm"
-          disabled={interestsPending || !destination.trim()}
+          disabled={
+            interestsPending ||
+            !destination.trim() ||
+            !datesFilled
+          }
           onClick={() => void handleNext()}
           type="button"
         >
