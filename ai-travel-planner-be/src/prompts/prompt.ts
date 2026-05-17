@@ -24,53 +24,70 @@ You must:
 
 LOCATION TYPES
 
-Classify every input into ONE of:
-
 - macroDestination → country or large region
 - cityDestination → self-sufficient travel city
-- clusterDestination → destination where travelers typically choose sub-areas for experience
-- poiDestination → specific place (hotel, landmark, attraction)
+- clusterDestination → destination with multiple distinct sub-areas affecting travel experience
+- poiDestination → specific place
 
 ---
 
-CRITICAL RULE: CLARIFICATION LOGIC
+CRITICAL RULE: CLARIFICATION GATING
 
-You may set:
+Set:
 clarificationRequired: true
 
 ONLY IF ALL CONDITIONS ARE TRUE:
 
-- destinationType == "clusterDestination"
-- AND sub-location choice meaningfully changes travel experience
-- AND travelers commonly decide between distinct areas BEFORE booking
+- locationType == "clusterDestination"
+- AND sub-location choice significantly changes travel experience
+- AND travelers commonly choose between distinct sub-areas BEFORE booking
 
 ---
 
-ALWAYS DO NOT ASK CLARIFICATION FOR:
+CRITICAL RULE: CLARIFICATION OPTIONS MUST BE ATOMIC
 
-- cityDestination (self-sufficient travel cities)
-- macroDestinations (countries or regions)
-- POIs (already specific destinations)
-- logistical subdivisions that do NOT meaningfully affect travel decision-making
+Each item in clarificationOptions MUST:
 
-Even if subregions exist, they must NOT be suggested unless they are essential for travel decision-making.
+- represent ONE single independent location
+- NOT contain multiple places
+- NOT contain grouped labels
+- NOT contain “and”, “&”, commas joining multiple entities
+- NOT be a category
+- NOT be a region grouping
+
+---
+
+FORBIDDEN PATTERNS (VERY IMPORTANT)
+
+❌ Kata & Karon
+❌ A and B
+❌ Beach areas like “North & South coast”
+❌ “Old town / city center”
+❌ “resorts and beaches”
+
+---
+
+VALID PATTERNS
+
+✔ Each option must be a single distinct sub-location
+✔ Each option must stand independently
+✔ Each option must be comparable to others as a choice
 
 ---
 
 NORMALIZATION RULES
 
 - Correct spelling mistakes
-- Handle transliteration and mixed languages
-- Resolve partial or shorthand inputs
-- Merge fragmented location inputs into canonical form
-- If ambiguous but solvable → choose best canonical match
+- Fix transliteration
+- Resolve partial inputs
+- If ambiguous → choose best canonical form
 - If cannot be resolved → mark invalid
 
 ---
 
 MULTIPLE LOCATIONS RULE
 
-If input contains unrelated places:
+If input contains unrelated destinations:
 containsMultipleLocations: true
 
 ---
@@ -78,10 +95,9 @@ containsMultipleLocations: true
 VALIDATION RULE
 
 A location is invalid ONLY IF:
-- it cannot be mapped to any real-world travel location with reasonable confidence
+- it cannot be mapped to a real-world travel destination with reasonable confidence
 
-Otherwise:
-- ALWAYS attempt normalization
+Otherwise always normalize.
 
 ---
 
@@ -89,10 +105,10 @@ OUTPUT RULES
 
 Return ONLY valid JSON.
 
-- camelCase keys strictly required
+- camelCase keys required
 - no markdown
-- no explanations
 - no extra fields
+- no explanations
 
 ---
 
@@ -106,22 +122,24 @@ OUTPUT SCHEMA
   "ambiguityDetected": false,
   "clarificationRequired": false,
   "clarificationReason": "",
-  "clarificationOptions": [],
+  "clarificationOptions": [
+    {
+      "name": "string",
+      "description": "string"
+    }
+  ],
   "confidence": 0.0
 }
 
 ---
 
-FINAL BEHAVIOR PRINCIPLE
+FINAL PRINCIPLE
 
-Optimize for:
+Optimize for travel decision-making clarity.
 
-“Would a real traveler actually need to choose between sub-options before planning?”
+Clarification options are not suggestions.
 
-NOT for:
-- geographic completeness
-- over-detailing
-- exhaustive decomposition
+They are competing atomic choices for itinerary planning.
 `;
 
 export const POI_CATEGORIES_PROMPT = `
