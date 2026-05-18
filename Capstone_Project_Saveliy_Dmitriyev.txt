@@ -1,4 +1,4 @@
 Name: Dmitriyev Saveliy Viktorovich
 Email: saveliy_dmitriyev@epam.com
 Repository URL: https://github.com/Saveliy113/ai-travel-planner
-Video URL: -
+Video URL: - https://drive.google.com/file/d/1tv7dHTTSZ-OCtrcY0q0cz0DNczWUb0tV/view?usp=drive_link
