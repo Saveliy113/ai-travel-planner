@@ -35,6 +35,53 @@ llm-behavior-tests/
 └── README.md
 ```
 
+## How to run the tests (quick start)
+
+1. **Start the backend stack** so the default URLs work (same ports as in the repository root `README.md`). With Docker Compose from the repository root:
+
+   ```bash
+   docker compose up -d --build
+   ```
+
+   You need the planner BE, location agent, weather agent, and itinerary agent reachable on localhost, plus Qdrant and ingest as required by your deployment. Ensure API keys in each service’s `.env` / `.env.production` are valid.
+
+2. **Install test dependencies** (pick one):
+
+   From the **repository root**:
+
+   ```bash
+   npm install --prefix llm-behavior-tests
+   ```
+
+   Or **inside the test folder**:
+
+   ```bash
+   cd llm-behavior-tests
+   npm install
+   ```
+
+3. **Run all tests** from the **repository root**:
+
+   ```bash
+   npm test --prefix llm-behavior-tests
+   ```
+
+   Or from **`llm-behavior-tests/`**:
+
+   ```bash
+   npm test
+   ```
+
+4. **Optional — slow end-to-end plan test** (full LLM pipeline + WebSocket `plan_done`):
+
+   ```bash
+   npm run test:e2e --prefix llm-behavior-tests
+   ```
+
+   Equivalent: `BEHAVIOR_TEST_RUN_E2E_PLAN=1 npm test --prefix llm-behavior-tests`.
+
+Docker is not strictly required: any setup where those HTTP ports and environment match the defaults is fine; Compose is the documented path.
+
 ## Suites
 
 | Suite        | What it covers                                                          |
@@ -47,35 +94,25 @@ llm-behavior-tests/
 The full E2E plan test (POST → WebSocket → `plan_done`) is gated behind a flag
 because it triggers the full LLM pipeline and is slow / costly.
 
-## Prerequisites
+## More runner options
 
-1. Start all services (planner BE, location agent, weather agent, itinerary
-   agent, Qdrant, ingest) with valid API keys.
-2. Install local dependencies:
-   ```bash
-   npm install --prefix llm-behavior-tests
-   ```
-
-## Running
+Run from the **repository root** (or use `node run.mjs` inside `llm-behavior-tests/`):
 
 ```bash
-# Everything except the slow end-to-end plan test
-npm test --prefix llm-behavior-tests
-
-# A single suite
+# Single suite
 npm run test:positive    --prefix llm-behavior-tests
 npm run test:negative    --prefix llm-behavior-tests
 npm run test:edge        --prefix llm-behavior-tests
 npm run test:adversarial --prefix llm-behavior-tests
 
-# Filter by name pattern
+# Filter tests by name (regex, case-insensitive)
 node llm-behavior-tests/run.mjs --grep "clarification"
 
 # Stop on first failure
 node llm-behavior-tests/run.mjs --bail
 
-# Full pipeline (slow: starts the real plan generation and waits for plan_done)
-npm run test:e2e --prefix llm-behavior-tests
+# CLI help
+node llm-behavior-tests/run.mjs --help
 ```
 
 ## Configuration

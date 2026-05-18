@@ -8,6 +8,7 @@ This repository contains a modular AI-powered travel planner composed of multipl
 - Ingest script (uploads travel patterns to Qdrant)
 - Frontend SPA (Vite preview)
 - Qdrant vector database
+- LLM behavior tests (black-box integration suite in `llm-behavior-tests/`)
 
 The provided Docker Compose config brings up Qdrant → ingest → the agents and backend → frontend.
 
@@ -58,6 +59,26 @@ Compose will start services in order: Qdrant → ingest → agents/backend → f
 - Tail logs: `docker compose logs -f <service>` (e.g. `ai-itenerary-agent`)  
 - Restart a single service: `docker compose up -d --no-deps --build ai-itenerary-agent`  
 - Full restart: `docker compose down && docker compose up -d --build`
+
+## LLM behavior tests
+
+After the stack is up (same Docker Compose flow as above), you can run the black-box integration suite against the planner backend, location agent, itinerary agent, and weather `/alive` endpoint.
+
+From the repository root:
+
+```bash
+npm install --prefix llm-behavior-tests
+npm test --prefix llm-behavior-tests
+```
+
+Optional slow test that drives full plan generation over WebSocket (`plan_done`):
+
+```bash
+npm run test:e2e --prefix llm-behavior-tests
+```
+
+Full instructions (suites, `--grep`, env overrides): [`llm-behavior-tests/README.md`](llm-behavior-tests/README.md).  
+Scenario catalogue for presentations (Russian): [`llm-behavior-tests/CASES.md`](llm-behavior-tests/CASES.md).
 
 ## Common issues and troubleshooting
 
