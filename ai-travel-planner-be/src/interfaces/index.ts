@@ -10,9 +10,3 @@ export type {
   DestinationClarificationOption,
   DestinationValidationResult,
 } from './validation.interface';
-export type {
-  TravelSetupClarificationOption,
-  TravelSetupGenerateBody,
-  TravelSetupGenerateResult,
-  TravelSetupInterestCategory,
-} from './travelSetup.interface';

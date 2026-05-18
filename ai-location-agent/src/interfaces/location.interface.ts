@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export type GooglePlacesSearchType = 'type' | 'keyword' | 'textsearch';
 
 export interface GetGooglePlacesQueryBind {
@@ -7,48 +9,47 @@ export interface GetGooglePlacesQueryBind {
   radius: number;
   searchType: GooglePlacesSearchType;
 }
-
-export interface GooglePlacesPhotoItem {
-    height: number;
-    width: number;
-    photo_reference: string;
-}
-
+    
 export interface GooglePlacesPoiItem {
-    business_status: string;
-    name: string;
-    formatted_address: string;
-    photos: GooglePlacesPhotoItem[];
-    place_id: string;
-    rating?: number;
-    types: string[];
-    user_ratings_total?: number;
+  name: string;
+  formatted_address: string;
+  place_id: string;
+  rating?: number;
+  types: string[];
+  workingHours: string[];
 }
 
 export interface GooglePlacesPoiResponse {
-    name: string;
-    businessStatus: string;
-    formattedAddress: string;
-    photos: GooglePlacesPhotoItem[];
-    placeId: string;
-    rating?: number;
-    types: string[];
-    userRatingsTotal?: number;
+  name: string;
+  formattedAddress: string;
+  placeId: string;
+  rating?: number;
+  types: string[];
+  workingHours: string[];
+  reviews: {
+    text: string;
+    time: number;
+  }[];
 }
 
-export interface GooglePlacesApiResponse {
- next_page_token: string;
- results: GooglePlacesPoiItem[];
+export interface LocationPoiResult {
+  name: string;
+  formattedAddress: string;
+  placeId: string;
+  rating?: number;
+  types: string[];
+  workingHours: string[];
+  reviewsSummary: string;
 }
 
 export interface CategoryQuery {
-    name: string;
-    count: number;
-    mode: GooglePlacesSearchType;
-    confidence: number;
-    density: 'dense' | 'medium' | 'sparse';
-    radiusMeters: number;
-    reason: string;
+  name: string;
+  count: number;
+  mode: GooglePlacesSearchType;
+  confidence: number;
+  density: 'dense' | 'medium' | 'sparse';
+  radiusMeters: number;
+  reason: string;
 }
 
 export interface LocationCategoryResult {
@@ -56,3 +57,32 @@ export interface LocationCategoryResult {
   count: number;
   items: GooglePlacesPoiResponse[];
 }
+
+/** MCP tool `get_poi`: geo context from caller; `categories` are pre-built by the itinerary agent (name + count per category). */
+const locationMcpToolInputSchema = {
+  categories: z
+    .array(
+      z.object({
+        searchQuery: z
+          .string()
+          .describe('Google Places search query, from planner'),
+        count: z.number().int().min(1).describe('Max POIs to return for this row'),
+      }),
+    ).min(1).describe('Planner-generated category rows only — not raw trip `interests` objects'),
+};
+
+export interface GoogleMapsSearchPlacesPayload {
+  places: GooglePlacesPoiItem[];
+}
+
+export interface GoogleMapsPlaceDetailsPayload {
+  reviews: {
+    text: string;
+    time: number;
+  }[];
+  opening_hours: {
+    weekday_text: string[];
+  };
+}
+
+export { locationMcpToolInputSchema };

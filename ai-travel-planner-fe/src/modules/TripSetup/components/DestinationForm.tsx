@@ -5,6 +5,7 @@ import {
   DESTINATION_SUGGESTIONS,
   destinationFieldId,
 } from "@/modules/TripSetup/model/scheme"
+import { normalizeDestinationClarificationOptions } from "@/modules/TripSetup/utils/normalizeClarificationOptions"
 import { Button } from "@/shared/ui/button"
 import { useValidateDestinationQuery } from "@/modules/TripSetup/queries/validation.query"
 import { useTripSetupStore } from "@/modules/TripSetup/store/tripSetup.store"
@@ -37,6 +38,8 @@ export const DestinationForm = () => {
           // If validation successfull (data.clarificationRequired is false),
           // proceed to next step
           if (!data.clarificationRequired) {
+            setNormalizedDestination(data.normalizedLocation)
+            setLocationType(data.locationType)
             setStep(2)
           }
           else {
@@ -45,7 +48,7 @@ export const DestinationForm = () => {
             setNormalizedDestination(data.normalizedLocation)
             setLocationType(data.locationType)
             setClarificationReason(data.clarificationReason)
-            setClarificationOptions(data.clarificationOptions)
+            setClarificationOptions(normalizeDestinationClarificationOptions(data.clarificationOptions))
             setFirstStepPhase("clarify")
           }
         },

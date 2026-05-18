@@ -1,0 +1,17 @@
+{
+  "name": "llm-behavior-tests",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node run.mjs",
+    "test:positive": "node run.mjs --suite positive",
+    "test:negative": "node run.mjs --suite negative",
+    "test:edge": "node run.mjs --suite edge",
+    "test:adversarial": "node run.mjs --suite adversarial",
+    "test:e2e": "BEHAVIOR_TEST_RUN_E2E_PLAN=1 node run.mjs --suite positive"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

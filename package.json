@@ -1,0 +1,12 @@
+{
+  "name": "ai-travel-planner-workspace",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "test:llm-behavior": "npm test --prefix llm-behavior-tests",
+    "test:llm-behavior:positive": "npm run test:positive --prefix llm-behavior-tests",
+    "test:llm-behavior:negative": "npm run test:negative --prefix llm-behavior-tests",
+    "test:llm-behavior:edge": "npm run test:edge --prefix llm-behavior-tests",
+    "test:llm-behavior:adversarial": "npm run test:adversarial --prefix llm-behavior-tests"
+  }
+}

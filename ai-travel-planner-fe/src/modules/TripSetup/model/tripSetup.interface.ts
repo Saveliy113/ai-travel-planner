@@ -42,7 +42,7 @@ export interface DestinationInterestsResponse {
   categories: TravelInterestCategory[]
 }
 
-/** Payload for `POST /travel-setup/generate` (matches TripSetup wizard summary). */
+/** Payload for `POST /travel-plan/generate` (matches TripSetup wizard summary). */
 export interface TripSetupPlanPayload {
   destination: string
   startDate: string
@@ -52,11 +52,8 @@ export interface TripSetupPlanPayload {
   additionalPreferences: string
 }
 
-/** Response from travel planner backend `/travel-setup/generate` (stub until real plan data). */
-export interface TravelSetupGenerateResult {
-  ok: boolean
-  message?: string
-}
+/** Immediate response from `POST /travel-plan/generate` (plan completes over WebSocket). */
+export type TravelSetupGenerateResult = import("./travel-plan-result.interface").TravelPlanGenerateAcceptedResponse
 
 export interface TripSetupStore {
   step: number;
@@ -89,4 +86,5 @@ export interface TripSetupStore {
   toggleInterestSelection: (label: string) => void;
   additionalPreferences: string;
   setAdditionalPreferences: (value: string) => void;
+  reset: () => void;
 }

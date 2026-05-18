@@ -1,70 +1,84 @@
-import axios from 'axios';
 import { LocationBodyDto, LocationInterestsBodyDto } from '../dtos/location.dto';
 import { logger } from '../utils/logger';
 
 import { openai } from '../loaders/openai';
-import { QUERY_EXPANDER_PROMPT, TRAVEL_INTERESTS_SYSTEM_PROMPT } from '../prompt/prompt';
+import { TRAVEL_INTERESTS_SYSTEM_PROMPT, VALIDATE_PLACES_SYSTEM_PROMPT } from '../prompt/prompt';
 import {
-  CategoryQuery,
-  GetGooglePlacesQueryBind,
-  GooglePlacesPoiItem,
+  GoogleMapsPlaceDetailsPayload,
+  GoogleMapsSearchPlacesPayload,
   GooglePlacesPoiResponse,
   LocationCategoryResult,
+  LocationPoiResult,
 } from '../interfaces/location.interface';
+import { googleMapsMcpClient } from '../loaders/mcpClient';
 
 class LocationService {
   private llmModel = process.env.OPENAI_MODEL || 'gpt-5-mini-2025-08-07';
 
-  private normalizePoiMetrics(poi: GooglePlacesPoiResponse): { rating: number; reviews: number } {
-    const r = poi.rating;
-    const rating = typeof r === 'number' && Number.isFinite(r) ? Math.max(0, r) : 0;
-    const u = poi.userRatingsTotal;
-    const reviews =
-      typeof u === 'number' && Number.isFinite(u) ? Math.max(0, Math.trunc(u)) : 0;
-    return { rating, reviews };
-  }
-
-  /** Composite score: rating × ln(1 + reviews); missing/non-finite values → 0. */
-  private poiCompositeScore(poi: GooglePlacesPoiResponse): number {
-    const { rating, reviews } = this.normalizePoiMetrics(poi);
-    return rating * Math.log1p(reviews);
-  }
-
-  private sortPlacesByRatingAndReviews(places: GooglePlacesPoiResponse[]): void {
-    places.sort((a, b) => {
-      const diff = this.poiCompositeScore(b) - this.poiCompositeScore(a);
-      if (diff !== 0) return diff;
-      const { rating: ra, reviews: ua } = this.normalizePoiMetrics(a);
-      const { rating: rb, reviews: ub } = this.normalizePoiMetrics(b);
-      if (rb !== ra) return rb > ra ? 1 : -1;
-      return ub - ua;
-    });
-  }
-
-  private async getGooglePlacesData( { lat, lon, radius, searchType, name }: GetGooglePlacesQueryBind): Promise<GooglePlacesPoiResponse[]> {
+  private parseMapsSearchPlacesMcpResult<T>(data: { content: Array<{ type: string; text?: string }> }): T {
     try {
-      const searchPath = ['type', 'keyword'].includes(searchType) ? 'nearbysearch' : 'textsearch';
-      const { data } = await axios.get(`${process.env.GOOGLE_PLACES_API_URL}/${searchPath}/json`, {
-        params: {
-          ...(searchType !== 'textsearch' ? { location: `${lat},${lon}` } : {}),
-          ...(searchType !== 'textsearch' ? { radius } : {}),
-          key: process.env.GOOGLE_PLACES_API_KEY,
-          ...(searchType === 'type' ? { type: name } : {}),
-          ...(searchType === 'keyword' ? { keyword: name } : {}),
-          ...(searchType === 'textsearch' ? { query: name } : {}),
+      const text = data.content
+        .filter(b =>
+          b.type === 'text' && typeof b.text === 'string',
+        )
+        .map((b) => b.text)
+        .join('\n');
+
+      const parsedData: T = JSON.parse(text);
+
+      return parsedData;
+    } catch (error) {
+      logger.error(
+        `[LocationService] parseMapsSearchPlacesMcpResult: ${error instanceof Error ? error.message : error}`,
+      );
+      throw error;
+    }
+  }
+
+  private async getGooglePlacesData(searchQuery: string): Promise<GooglePlacesPoiResponse[]> {
+    try {
+      logger.info('[POI] step · Google search');
+      const raw = await googleMapsMcpClient.callTool({
+        name: 'maps_search_places',
+        arguments: {
+          query: searchQuery,
         },
       });
+      const data = this.parseMapsSearchPlacesMcpResult<GoogleMapsSearchPlacesPayload>(raw as { content: Array<{ type: string; text?: string }> });
+      const rows = data.places ?? [];
 
-      return data.results.map((result: GooglePlacesPoiItem) => ({
-        name: result.name,
-        businessStatus: result.business_status,
-        formattedAddress: result.formatted_address,
-        photos: result.photos,
-        placeId: result.place_id,
-        rating: result.rating,
-        types: result.types,
-        userRatingsTotal: result.user_ratings_total,
-      }));
+      if (rows.length === 0) {
+        logger.warn('[POI] step · Google search · no results');
+        return [];
+      }
+
+      logger.info('[POI] step · place details');
+      const response = await Promise.all(
+        rows.map(async (result) => {
+          const detailedRaw = await googleMapsMcpClient.callTool({
+            name: 'maps_place_details',
+            arguments: {
+              place_id: result.place_id,
+            },
+          });
+          const detailedData = this.parseMapsSearchPlacesMcpResult<GoogleMapsPlaceDetailsPayload>(detailedRaw as { content: Array<{ type: string; text?: string }> });
+
+          return {
+            name: result.name,
+            placeId: result.place_id,
+            formattedAddress: result.formatted_address,
+            rating: result.rating,
+            reviews: (detailedData.reviews || []).map(review => ({
+              text: review.text,
+              time: review.time,
+            })),
+            types: result.types,
+            workingHours: detailedData.opening_hours?.weekday_text || [],
+          };
+        }),
+      );
+
+      return response;
     } catch (error) {
       logger.error(
         `[LocationService] getGooglePlacesData: ${error instanceof Error ? error.message : error}`,
@@ -73,49 +87,47 @@ class LocationService {
     }
   }
 
-  public async getLocation(body: LocationBodyDto): Promise<{ places: LocationCategoryResult[] }> {
+  public async getLocation(body: LocationBodyDto): Promise<{ places: LocationPoiResult[] }> {
     try {
-      const { lat, lon, destination, categories } = body;
+      const { categories } = body;
 
-      // Building query for categories with OpenAI API
-      const query = await openai.chat.completions.create({
+      const places: LocationCategoryResult[] = [];
+
+      for (let i = 0; i < categories.length; i++) {
+        const category = categories[i];
+        logger.info(`[POI] step · category ${i + 1}/${categories.length}`);
+        const googlePlacesData = await this.getGooglePlacesData(category.searchQuery);
+
+        places.push({
+          name: category.name ?? category.searchQuery,
+          count: category.count,
+          items: googlePlacesData,
+        });
+      }
+
+      logger.info('[POI] step · LLM validate');
+      const completion = await openai.chat.completions.create({
         model: this.llmModel,
         messages: [
           {
             role: 'system',
-            content: QUERY_EXPANDER_PROMPT,
+            content: VALIDATE_PLACES_SYSTEM_PROMPT,
           },
           {
             role: 'user',
-            content: JSON.stringify({
-              destination: destination,
-              categories,
-            }),
+            content: JSON.stringify({ places }),
           },
         ],
       });
 
-      // Requesting data from google places api — parse query.choices[0].message.content (JSON array with radiusMeters per category)
-      let categoriesQuery: CategoryQuery[] = JSON.parse(query.choices[0].message.content || '[]') as CategoryQuery[];
-      let places: LocationCategoryResult[] = [];
-      for (const category of categoriesQuery) {
-        const googlePlacesData = await this.getGooglePlacesData({
-          lat,
-          lon,
-          radius: category.radiusMeters,
-          searchType: category.mode,
-          name: category.name,
-        });
-
-        this.sortPlacesByRatingAndReviews(googlePlacesData);
-        places.push({
-          name: category.name,
-          count: category.count,
-          items: googlePlacesData.slice(0, category.count),
-        });
+      const content = completion.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error('Empty response from OpenAI');
       }
 
-      return { places };
+      const result = JSON.parse(content) as { places: LocationPoiResult[] };
+
+      return result;
     } catch (error) {
       logger.error(
         `[LocationService] getLocation: ${error instanceof Error ? error.message : error}`,

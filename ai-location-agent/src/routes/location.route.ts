@@ -2,8 +2,8 @@ import { Router } from 'express';
 
 import Route from '../interfaces/routes.interface';
 import { LocationController } from '../controllers/index';
-import { LocationMiddleware, validateDto } from '../middlewares/index';
-import { LocationBodyDto, LocationInterestsBodyDto } from '../dtos/index';
+import { validateDto } from '../middlewares/index';
+import { LocationInterestsBodyDto } from '../dtos/index';
 
 class LocationRoutes implements Route {
   public path = '/location';
@@ -19,12 +19,6 @@ class LocationRoutes implements Route {
       `${this.path}/interests`,
       validateDto(LocationInterestsBodyDto, 'body'),
       this.locationController.getInterests,
-    );
-    this.router.post(
-      this.path,
-      validateDto(LocationBodyDto, 'body'),
-      LocationMiddleware,
-      this.locationController.getLocation,
     );
   }
 }
